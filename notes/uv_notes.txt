@@ -1,0 +1,9 @@
+# 1. Initialize the project (creates pyproject.toml and project structure)
+uv init nam-protocol-engine
+cd nam-protocol-engine
+
+# 2. Add application dependencies (creates .venv and uv.lock automatically)
+uv add pydantic pypdf
+
+# 3. Add pytest as a development dependency
+uv add --dev pytest
