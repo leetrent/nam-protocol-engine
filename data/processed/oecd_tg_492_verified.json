@@ -1,0 +1,21 @@
+{
+  "protocol_id": "oecd-tg-492-rhce",
+  "protocol_name": "Reconstructed Human Cornea-Like Epithelium (RhCE) Test Method",
+  "technology_category": "in_vitro",
+  "endpoint": {
+    "name": "Serious Eye Damage / Eye Irritation",
+    "target_tissue": "Cornea / Ocular",
+    "historical_animal_test": "Draize Eye Test (OECD TG 405)"
+  },
+  "regulatory_status": "Full Regulatory Acceptance",
+  "context_of_use": "Identifies chemicals (substances and mixtures) not requiring classification and labelling for eye irritation or serious eye damage under UN GHS No Category.",
+  "citations": [
+    {
+      "standard_body": "OECD",
+      "guideline_id": "OECD TG 492",
+      "document_title": "Reconstructed human Cornea-like Epithelium (RhCE) test method for identifying chemicals not requiring classification and labelling for eye irritation or serious eye damage",
+      "section_reference": "Paragraphs 3-6, Table 4",
+      "official_url": "https://doi.org/10.1787/9789264242548-en"
+    }
+  ]
+}
