@@ -31,7 +31,6 @@ class ProtocolMatcher:
                 self.verified_protocols.append(NAMProtocol(**data))
 
     def find_alternative(self, query: str) -> MatchResult:
-        """Finds matching validated non-animal methods for a given testing query."""
         search_hits = self.index.search(query, top_k=2)
 
         if not search_hits:
@@ -44,15 +43,27 @@ class ProtocolMatcher:
         query_lower = query.lower()
         matched_protocol = None
 
-        # Check against loaded verified protocols
         for proto in self.verified_protocols:
-            endpoint_match = (
+            # Check direct endpoint/test name matches
+            if (
                 proto.endpoint.name.lower() in query_lower or
                 proto.endpoint.historical_animal_test.lower() in query_lower or
                 proto.endpoint.target_tissue.lower() in query_lower
-            )
-            # Keyword triggers: "eye", "draize", "cornea", "irritation"
-            if endpoint_match or any(k in query_lower for k in ("eye", "draize", "ocular", "cornea")):
+            ):
+                matched_protocol = proto
+                break
+
+            # Keyword routing for Ocular/Draize
+            if proto.protocol_id == "oecd-tg-492-rhce" and any(
+                k in query_lower for k in ("eye", "draize", "ocular", "cornea")
+            ):
+                matched_protocol = proto
+                break
+
+            # Keyword routing for Dermal/Sensitisation
+            if proto.protocol_id == "oecd-tg-497-da-sensitisation" and any(
+                k in query_lower for k in ("skin", "sensitisation", "sensitization", "llna", "lymph node", "dermal")
+            ):
                 matched_protocol = proto
                 break
 

@@ -1,0 +1,21 @@
+{
+  "protocol_id": "oecd-tg-497-da-sensitisation",
+  "protocol_name": "Defined Approaches on Skin Sensitisation (2o3 DA & ITSv1/v2)",
+  "technology_category": "defined_approach",
+  "endpoint": {
+    "name": "Skin Sensitisation",
+    "target_tissue": "Dermal / Epidermal",
+    "historical_animal_test": "Local Lymph Node Assay (LLNA - OECD TG 429) / Guinea Pig Maximisation Test (GPMT)"
+  },
+  "regulatory_status": "Full Regulatory Acceptance",
+  "context_of_use": "Rules-based combination of in chemico (DPRA) and in vitro assays (KeratinoSens, h-CLAT) with in silico tools to discriminate skin sensitisers from non-sensitisers and determine UN GHS sub-categorisation.",
+  "citations": [
+    {
+      "standard_body": "OECD",
+      "guideline_id": "OECD TG 497",
+      "document_title": "Defined Approaches on Skin Sensitisation",
+      "section_reference": "Section 1, Paragraphs 1-12 & Annex I",
+      "official_url": "https://doi.org/10.1787/ed27da84-en"
+    }
+  ]
+}
