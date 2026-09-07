@@ -137,3 +137,35 @@ def test_eval_tg497_aop_key_events(search_index):
         any(k in s for k in ("Section 1", "Section 2", "SECTION 3", "SECTION 4", "Introduction"))
         for s in top_sections
     ), f"Failed to retrieve AOP section: {top_sections}"
+    
+# =====================================================================
+# OECD TG 439 (Skin Irritation / RhE) Benchmarks
+# =====================================================================
+
+def test_eval_retrieval_tg439_viability_cutoff(search_index):
+    """
+    Benchmark 9: Queries targeting skin irritation classification cut-offs (50% viability)
+    must surface Functional conditions or Interpretation of Results in TG 439.
+    """
+    query = "percent cell viability threshold 50% UN GHS Category 2"
+    results = search_index.search(query, top_k=2, source_filter="439")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 439."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("Functional conditions", "Interpretation of Results", "PRINCIPLE"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"
+
+
+def test_eval_retrieval_tg439_proficiency_substances(search_index):
+    """
+    Benchmark 10: Queries targeting demonstration of proficiency in TG 439
+    must prioritize DEMONSTRATION OF PROFICIENCY containing Table 1.
+    """
+    query = "ten proficiency substances demonstration of technical proficiency"
+    results = search_index.search(query, top_k=2, source_filter="439")
+
+    assert len(results) > 0
+    top_hit = results[0]
+    assert "DEMONSTRATION OF PROFICIENCY" in top_hit["section_title"]

@@ -19,24 +19,23 @@ class RegulatoryDocParser:
         re.compile(r"^\d+\s*$", re.IGNORECASE),
     ]
 
-    # Robust regex patterns targeting exact line starts for section headers
     HEADING_PATTERNS = [
-        # Common OECD Guideline Sections (TG 492 & TG 497)
+        # Common OECD Guideline Sections (TG 439, TG 492, TG 497)
         re.compile(r"^(?:1\s+)?Section 1[-–\s]*Introduction\b", re.IGNORECASE),
         re.compile(r"^1\.1\.\s+General Introduction\b", re.IGNORECASE),
         re.compile(r"^1\.2\s+DAs included in the Guideline\b", re.IGNORECASE),
         re.compile(r"^1\.3\s+Limitations\b", re.IGNORECASE),
-        re.compile(r"^INTRODUCTION\b", re.IGNORECASE),
-        re.compile(r"^INITIAL CONSIDERATIONS AND LIMITATIONS\b", re.IGNORECASE),
-        re.compile(r"^PRINCIPLE OF THE TEST\b", re.IGNORECASE),
-        re.compile(r"^DEMONSTRATION OF PROFICIENCY\b", re.IGNORECASE),
-        re.compile(r"^PROCEDURE\b", re.IGNORECASE),
-        re.compile(r"^RhCE TEST METHOD COMPONENTS\b", re.IGNORECASE),
-        re.compile(r"^GENERAL CONDITIONS\b", re.IGNORECASE),
-        re.compile(r"^FUNCTIONAL CONDITIONS\b", re.IGNORECASE),
-        re.compile(r"^ACCEPTANCE CRITERIA\b", re.IGNORECASE),
-        re.compile(r"^INTERPRETATION OF RESULTS AND PREDICTION MODEL\b", re.IGNORECASE),
-        re.compile(r"^DATA AND REPORTING\b", re.IGNORECASE),
+        re.compile(r"^INTRODUCTION\s*$", re.IGNORECASE),
+        re.compile(r"^INITIAL CONSIDERATIONS AND LIMITATIONS\s*$", re.IGNORECASE),
+        re.compile(r"^PRINCIPLE OF THE TEST\s*$", re.IGNORECASE),
+        re.compile(r"^DEMONSTRATION OF PROFICIENCY\s*$", re.IGNORECASE),
+        re.compile(r"^PROCEDURE\s*$", re.IGNORECASE),
+        re.compile(r"^(?:RhCE|RHE)\s+TEST METHOD COMPONENTS\s*$", re.IGNORECASE),
+        re.compile(r"^GENERAL CONDITIONS\s*$", re.IGNORECASE),
+        re.compile(r"^FUNCTIONAL CONDITIONS\s*$", re.IGNORECASE),
+        re.compile(r"^ACCEPTANCE CRITERIA\s*$", re.IGNORECASE),
+        re.compile(r"^INTERPRETATION OF RESULTS", re.IGNORECASE),
+        re.compile(r"^DATA AND REPORTING\s*$", re.IGNORECASE),
 
         # TG 497 Structural Sections
         re.compile(r"^Part I\s+SECTION 2\b", re.IGNORECASE),
@@ -47,12 +46,11 @@ class RegulatoryDocParser:
         re.compile(r"^4\.1\s+[\"']?SARA-ICE[\"']?\s+Defined Approach\b", re.IGNORECASE),
         re.compile(r"^4\.2\s+[\"']?Regression-based[\"']?\s+Defined Approach\b", re.IGNORECASE),
 
-        # Annexes & Appendices (Must NOT be in-text mentions like 'Annex X of the...')
-        re.compile(r"^Annex \d+\.\s+[A-Z]", re.IGNORECASE),
-        re.compile(r"^ANNEX [I|V|X]+(?:\s*[-–]\s*|\s+[A-Z])", re.IGNORECASE),
-        re.compile(r"^Appendix [I|V|X]+:\s+[A-Z]", re.IGNORECASE),
-        re.compile(r"^LITERATURE\b", re.IGNORECASE),
-        re.compile(r"^References\b", re.IGNORECASE),
+        # Annexes & Appendices (Must have punctuation delimiter: '-', '–', '.', or ':')
+        re.compile(r"^(?:ANNEX|Annex)\s+(?:\d+|[IVX]+)\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
+        re.compile(r"^(?:APPENDIX|Appendix)\s+(?:\d+|[IVX]+)\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
+        re.compile(r"^LITERATURE\s*$", re.IGNORECASE),
+        re.compile(r"^References\s*$", re.IGNORECASE),
     ]
 
     def __init__(self, pdf_path: str | Path):
@@ -89,22 +87,20 @@ class RegulatoryDocParser:
         in_toc = False
 
         for page in pages:
-            # Skip preliminary Table of Contents pages
             first_lines = " ".join(page["lines"][:3]).lower()
             if "table of contents" in first_lines:
                 in_toc = True
             if in_toc:
-                # Body begins at Section 1 (page 6) or INTRODUCTION (page 2)
                 if any(re.match(r"^(?:1\s+)?Section 1[-–\s]*Introduction", l, re.IGNORECASE) for l in page["lines"]):
                     in_toc = False
-                elif any(re.match(r"^INTRODUCTION", l, re.IGNORECASE) for l in page["lines"]):
+                elif any(re.match(r"^INTRODUCTION\s*$", l, re.IGNORECASE) for l in page["lines"]):
                     in_toc = False
                 else:
                     continue
 
             for line in page["lines"]:
-                # Ignore lines that are citations or references to an annex (e.g. "Annex 2 of the...")
-                if re.match(r"^(?:Annex|Appendix)\s+\w+\s+of\s+the\b", line, re.IGNORECASE):
+                # Ignore lines that are citations or narrative references
+                if re.match(r"^(?:Annex|Appendix)\s+\w+\s+(?:of\s+the|for\b)\b", line, re.IGNORECASE):
                     current_chunk.append(line)
                     continue
 

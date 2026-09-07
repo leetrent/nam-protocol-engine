@@ -60,12 +60,39 @@ def load_oecd_497_baseline() -> NAMProtocol:
         ],
     )
 
+def load_oecd_439_baseline() -> NAMProtocol:
+    """Instantiates validated ground-truth for OECD TG 439 RhE Skin Irritation."""
+    return NAMProtocol(
+        protocol_id="oecd-tg-439-rhe",
+        protocol_name="In Vitro Skin Irritation: Reconstructed Human Epidermis (RhE) Test Method",
+        technology_category="in_vitro",
+        endpoint=BiologicalEndpoint(
+            name="Skin Irritation",
+            target_tissue="Dermal / Epidermal",
+            historical_animal_test="Acute Dermal Irritation / Corrosion Test (OECD TG 404)",
+        ),
+        regulatory_status="Full Regulatory Acceptance",
+        context_of_use=(
+            "Identifies chemicals (substances and mixtures) inducing moderate skin irritation (UN GHS Category 2) "
+            "from non-irritants (UN GHS No Category) as a stand-alone replacement for the rabbit test."
+        ),
+        citations=[
+            RegulatoryCitation(
+                standard_body="OECD",
+                guideline_id="OECD TG 439",
+                document_title="In Vitro Skin Irritation: Reconstructed Human Epidermis Test Method",
+                section_reference="Paragraphs 1-10, Table 2",
+                official_url="https://doi.org/10.1787/9789264242845-en",
+            )
+        ],
+    )
+
 
 if __name__ == "__main__":
     out_dir = Path("data/processed")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    protocols = [load_oecd_492_baseline(), load_oecd_497_baseline()]
+    protocols = [load_oecd_492_baseline(), load_oecd_497_baseline(), load_oecd_439_baseline()]
 
     for proto in protocols:
         out_file = out_dir / f"{proto.protocol_id}_verified.json"

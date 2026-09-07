@@ -1,7 +1,13 @@
 import json
+import sys
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.schemas import NAMProtocol
 from src.search import GuidelineIndex
 
@@ -31,41 +37,40 @@ class ProtocolMatcher:
                 self.verified_protocols.append(NAMProtocol(**data))
 
     def find_alternative(self, query: str) -> MatchResult:
-        search_hits = self.index.search(query, top_k=2)
-
-        if not search_hits:
-            return MatchResult(
-                query=query,
-                matched=False,
-                recommendation="No relevant regulatory testing guidelines found."
-            )
-
         query_lower = query.lower()
+
         matched_protocol = None
-
         for proto in self.verified_protocols:
-            # Check direct endpoint/test name matches
-            if (
-                proto.endpoint.name.lower() in query_lower or
-                proto.endpoint.historical_animal_test.lower() in query_lower or
-                proto.endpoint.target_tissue.lower() in query_lower
+            # Match 1: Ocular / Draize replacement (TG 492)
+            if "rhce" in proto.protocol_id and any(
+                k in query_lower for k in ("eye", "draize", "ocular", "cornea", "405")
             ):
                 matched_protocol = proto
                 break
 
-            # Keyword routing for Ocular/Draize
-            if proto.protocol_id == "oecd-tg-492-rhce" and any(
-                k in query_lower for k in ("eye", "draize", "ocular", "cornea")
+            # Match 2: Dermal Sensitisation replacement (TG 497)
+            if "sensitisation" in proto.protocol_id and any(
+                k in query_lower for k in ("sensitisation", "sensitization", "llna", "lymph node", "429")
             ):
                 matched_protocol = proto
                 break
 
-            # Keyword routing for Dermal/Sensitisation
-            if proto.protocol_id == "oecd-tg-497-da-sensitisation" and any(
-                k in query_lower for k in ("skin", "sensitisation", "sensitization", "llna", "lymph node", "dermal")
+            # Match 3: Dermal Irritation replacement (TG 439)
+            if "439" in proto.protocol_id and any(
+                k in query_lower for k in ("skin irritation", "dermal irritation", "rhe", "404", "rabbit skin")
             ):
                 matched_protocol = proto
                 break
+
+        # Derive source filter from matched guideline ID (e.g. "439", "492", "497")
+        source_filter = None
+        if matched_protocol and matched_protocol.citations:
+            guideline_id = matched_protocol.citations[0].guideline_id
+            digits = "".join(filter(str.isdigit, guideline_id))
+            if digits:
+                source_filter = digits
+
+        search_hits = self.index.search(query, top_k=2, source_filter=source_filter)
 
         evidence = [
             f"[{hit['section_title']} (pp. {hit['pages']})]: {hit['excerpt'][:160]}"
@@ -78,8 +83,10 @@ class ProtocolMatcher:
                 f"'{matched_protocol.protocol_name}' ({matched_protocol.technology_category}). "
                 f"Regulatory Status: {matched_protocol.regulatory_status}."
             )
-        else:
+        elif search_hits:
             recommendation = "Relevant guideline sections located, but no verified full-replacement protocol is registered yet."
+        else:
+            recommendation = "No relevant regulatory testing guidelines found."
 
         return MatchResult(
             query=query,
@@ -88,16 +95,3 @@ class ProtocolMatcher:
             supporting_evidence=evidence,
             recommendation=recommendation
         )
-
-
-if __name__ == "__main__":
-    matcher = ProtocolMatcher()
-    sample_query = "What is the validated in vitro replacement for the Draize rabbit eye test?"
-    result = matcher.find_alternative(sample_query)
-
-    print(f"Query: {result.query}\n")
-    print(f"Matched: {result.matched}")
-    print(f"Recommendation: {result.recommendation}\n")
-    print("Supporting Regulatory Evidence:")
-    for ev in result.supporting_evidence:
-        print(f"  - {ev}")

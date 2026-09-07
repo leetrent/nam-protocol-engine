@@ -26,3 +26,13 @@ def test_matcher_handles_unknown_query():
 
     assert result.matched is False
     assert result.protocol is None
+    
+def test_matcher_finds_skin_irritation_alternative():
+    matcher = ProtocolMatcher()
+    result = matcher.find_alternative("in vitro skin irritation Draize rabbit skin replacement OECD TG 404")
+
+    assert result.matched is True
+    assert result.protocol is not None
+    assert result.protocol.protocol_id == "oecd-tg-439-rhe"
+    assert "OECD TG 404" in result.recommendation
+    
