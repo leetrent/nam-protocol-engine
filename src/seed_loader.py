@@ -87,12 +87,47 @@ def load_oecd_439_baseline() -> NAMProtocol:
         ],
     )
 
+def load_oecd_437_baseline() -> NAMProtocol:
+    """Instantiates validated ground-truth for OECD TG 437 BCOP Ocular Assay."""
+    return NAMProtocol(
+        protocol_id="oecd-tg-437-bcop",
+        protocol_name="Bovine Corneal Opacity and Permeability (BCOP) Test Method",
+        technology_category="ex_vivo",
+        endpoint=BiologicalEndpoint(
+            name="Serious Eye Damage / Eye Irritation",
+            target_tissue="Cornea / Ocular",
+            historical_animal_test="Draize Eye Test (OECD TG 405)",
+        ),
+        regulatory_status="Full Regulatory Acceptance",
+        context_of_use=(
+            "Identifies chemicals inducing serious eye damage (UN GHS Category 1) and chemicals "
+            "not requiring classification (UN GHS No Category) without further testing."
+        ),
+        citations=[
+            RegulatoryCitation(
+                standard_body="OECD",
+                guideline_id="OECD TG 437",
+                document_title=(
+                    "Bovine Corneal Opacity and Permeability Test Method for Identifying "
+                    "i) Chemicals Inducing Serious Eye Damage and ii) Chemicals Not Requiring "
+                    "Classification for Eye Irritation or Serious Eye Damage"
+                ),
+                section_reference="Paragraphs 1-9, Table 2",
+                official_url="https://doi.org/10.1787/9789264203846-en",
+            )
+        ],
+    )
 
 if __name__ == "__main__":
     out_dir = Path("data/processed")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    protocols = [load_oecd_492_baseline(), load_oecd_497_baseline(), load_oecd_439_baseline()]
+    protocols = [
+        load_oecd_492_baseline(),
+        load_oecd_497_baseline(),
+        load_oecd_439_baseline(),
+        load_oecd_437_baseline(),
+    ]
 
     for proto in protocols:
         out_file = out_dir / f"{proto.protocol_id}_verified.json"
