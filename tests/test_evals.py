@@ -9,16 +9,19 @@ def search_index():
     return index
 
 
+# =====================================================================
+# OECD TG 492 (Ocular Toxicity / RhCE) Benchmarks
+# =====================================================================
+
 def test_eval_retrieval_viability_cutoff(search_index):
     """
-    Benchmark: Queries targeting viability criteria must prioritize
+    Benchmark 1: Queries targeting viability criteria must prioritize
     the FUNCTIONAL CONDITIONS section containing Table 4 cut-offs.
     """
     query = "tissue viability cutoff threshold for classification"
     results = search_index.search(query, top_k=3, source_filter="492")
 
     assert len(results) > 0, "Retrieval returned zero hits."
-
     top_hit = results[0]
     assert "FUNCTIONAL CONDITIONS" in top_hit["section_title"]
     assert top_hit["score"] > 20
@@ -26,7 +29,7 @@ def test_eval_retrieval_viability_cutoff(search_index):
 
 def test_eval_retrieval_draize_replacement_context(search_index):
     """
-    Benchmark: Queries regarding the historical Draize animal replacement
+    Benchmark 2: Queries regarding historical Draize animal replacement
     must surface the INTRODUCTION or PRINCIPLE sections in top 2 results.
     """
     query = "Draize rabbit eye test replacement in vitro"
@@ -34,7 +37,6 @@ def test_eval_retrieval_draize_replacement_context(search_index):
 
     assert len(results) > 0
     top_sections = [r["section_title"] for r in results]
-
     has_expected_context = any(
         sec in ("INTRODUCTION", "PRINCIPLE OF THE TEST", "FUNCTIONAL CONDITIONS")
         for sec in top_sections
@@ -44,8 +46,8 @@ def test_eval_retrieval_draize_replacement_context(search_index):
 
 def test_eval_hit_attribution_has_pages(search_index):
     """
-    Benchmark: Every retrieved hit must contain valid page range metadata
-    to ensure full auditability.
+    Benchmark 3: Every retrieved hit must contain valid page range metadata
+    to ensure regulatory auditability.
     """
     query = "negative and positive control substances"
     results = search_index.search(query, top_k=3, source_filter="492")
@@ -54,3 +56,84 @@ def test_eval_hit_attribution_has_pages(search_index):
         assert "-" in hit["pages"], f"Malformed page range: {hit['pages']}"
         start_p, end_p = hit["pages"].split("-")
         assert int(start_p) > 0 and int(end_p) >= int(start_p)
+
+
+def test_eval_tg492_proficiency_chemicals_lookup(search_index):
+    """
+    Benchmark 4: Queries regarding laboratory demonstration of proficiency
+    must surface DEMONSTRATION OF PROFICIENCY containing Table 1.
+    """
+    query = "fifteen proficiency chemicals technical proficiency validation"
+    results = search_index.search(query, top_k=2, source_filter="492")
+
+    assert len(results) > 0
+    top_hit = results[0]
+    assert "DEMONSTRATION OF PROFICIENCY" in top_hit["section_title"]
+
+
+def test_eval_tg492_applicability_domain_exclusions(search_index):
+    """
+    Benchmark 5: Queries about non-applicable substance formats (gases, aerosols)
+    must rank INITIAL CONSIDERATIONS AND LIMITATIONS or INTRODUCTION at top.
+    """
+    query = "gases aerosols applicability domain limitations"
+    results = search_index.search(query, top_k=2, source_filter="492")
+
+    assert len(results) > 0
+    top_sections = [r["section_title"] for r in results]
+    assert any("LIMITATIONS" in s or "INTRODUCTION" in s for s in top_sections)
+
+
+# =====================================================================
+# OECD TG 497 (Skin Sensitisation Defined Approaches) Benchmarks
+# =====================================================================
+
+def test_eval_retrieval_skin_sensitisation_da(search_index):
+    """
+    Benchmark 6: Queries targeting Defined Approaches for skin sensitisation
+    must surface Section 1, Part I (2o3 DA), or Part II (ITS DA).
+    """
+    query = "defined approaches 2 out of 3 integrated testing strategy"
+    results = search_index.search(query, top_k=3, source_filter="497")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 497."
+    top_sections = [r["section_title"] for r in results]
+
+    has_expected = any(
+        any(k in s for k in ("Section 1", "Section 2", "SECTION 3", "Defined Approaches", "2 out of 3", "ITS"))
+        for s in top_sections
+    )
+    assert has_expected, f"Unexpected sections retrieved: {top_sections}"
+
+
+def test_eval_tg497_its_battery_scoring(search_index):
+    """
+    Benchmark 7: Queries regarding the Integrated Testing Strategy total battery score
+    and potency sub-categorisation (1A, 1B, NC) must retrieve Part II SECTION 3 or DAs summary.
+    """
+    query = "integrated testing strategy total battery score UN GHS category 1A 1B"
+    results = search_index.search(query, top_k=3, source_filter="497")
+
+    assert len(results) > 0
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("SECTION 3", "ITS", "Section 1", "DAs included"))
+        for s in top_sections
+    ), f"Failed to retrieve ITS section: {top_sections}"
+
+
+def test_eval_tg497_aop_key_events(search_index):
+    """
+    Benchmark 8: Queries addressing Adverse Outcome Pathway key events
+    (KE1 protein binding, KE2 keratinocyte, KE3 dendritic cell) must locate 
+    AOP introductory or DA test-battery sections (Sections 1-4).
+    """
+    query = "adverse outcome pathway protein binding keratinocytes dendritic cells KE1 KE2 KE3"
+    results = search_index.search(query, top_k=2, source_filter="497")
+
+    assert len(results) > 0
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("Section 1", "Section 2", "SECTION 3", "SECTION 4", "Introduction"))
+        for s in top_sections
+    ), f"Failed to retrieve AOP section: {top_sections}"

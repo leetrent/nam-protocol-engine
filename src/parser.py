@@ -19,14 +19,15 @@ class RegulatoryDocParser:
         re.compile(r"^\d+\s*$", re.IGNORECASE),
     ]
 
-    # Flexible regex patterns matching TG 492 and TG 497 major sections
+    # Robust regex patterns targeting exact line starts for section headers
     HEADING_PATTERNS = [
-        # Common OECD Headings (TG 492 & 497)
-        re.compile(r"^(?:1\s+)?Section 1[-–\s]*Introduction", re.IGNORECASE),
+        # Common OECD Guideline Sections (TG 492 & TG 497)
+        re.compile(r"^(?:1\s+)?Section 1[-–\s]*Introduction\b", re.IGNORECASE),
+        re.compile(r"^1\.1\.\s+General Introduction\b", re.IGNORECASE),
+        re.compile(r"^1\.2\s+DAs included in the Guideline\b", re.IGNORECASE),
+        re.compile(r"^1\.3\s+Limitations\b", re.IGNORECASE),
         re.compile(r"^INTRODUCTION\b", re.IGNORECASE),
         re.compile(r"^INITIAL CONSIDERATIONS AND LIMITATIONS\b", re.IGNORECASE),
-        re.compile(r"^1\.2\s+DAs included in the Guideline", re.IGNORECASE),
-        re.compile(r"^1\.3\s+Limitations\b", re.IGNORECASE),
         re.compile(r"^PRINCIPLE OF THE TEST\b", re.IGNORECASE),
         re.compile(r"^DEMONSTRATION OF PROFICIENCY\b", re.IGNORECASE),
         re.compile(r"^PROCEDURE\b", re.IGNORECASE),
@@ -37,21 +38,21 @@ class RegulatoryDocParser:
         re.compile(r"^INTERPRETATION OF RESULTS AND PREDICTION MODEL\b", re.IGNORECASE),
         re.compile(r"^DATA AND REPORTING\b", re.IGNORECASE),
 
-        # TG 497 Defined Approaches Specific Sections
-        re.compile(r"^Part I\s+Section 2\s*[-–]\s*Defined Approaches", re.IGNORECASE),
-        re.compile(r"^2\.1\s+[\"']?2 out of 3[\"']?\s+Defined Approach", re.IGNORECASE),
-        re.compile(r"^Part II\s+SECTION 3\s*[-–]\s*Defined Approaches", re.IGNORECASE),
-        re.compile(r"^3\.1\s+[\"']?Integrated Testing Strategy\s*\(ITS\)[\"']?", re.IGNORECASE),
-        re.compile(r"^Part III\s+SECTION 4\s*[-–]\s*Defined Approaches", re.IGNORECASE),
-        re.compile(r"^4\.1\s+[\"']?SARA-ICE[\"']?\s+Defined Approach", re.IGNORECASE),
-        re.compile(r"^4\.2\s+[\"']?Regression-based[\"']?\s+Defined Approach", re.IGNORECASE),
+        # TG 497 Structural Sections
+        re.compile(r"^Part I\s+SECTION 2\b", re.IGNORECASE),
+        re.compile(r"^2\.1\s+[\"']?2 out of 3[\"']?\s+Defined Approach\b", re.IGNORECASE),
+        re.compile(r"^Part II\s+SECTION 3\b", re.IGNORECASE),
+        re.compile(r"^3\.1\s+[\"']?Integrated Testing Strategy\s*\(ITS\)[\"']?\s+Defined Approach\b", re.IGNORECASE),
+        re.compile(r"^Part III\s+SECTION 4\b", re.IGNORECASE),
+        re.compile(r"^4\.1\s+[\"']?SARA-ICE[\"']?\s+Defined Approach\b", re.IGNORECASE),
+        re.compile(r"^4\.2\s+[\"']?Regression-based[\"']?\s+Defined Approach\b", re.IGNORECASE),
 
-        # Annexes and Appendices
-        re.compile(r"^Annex \d+[\.:\s-].*", re.IGNORECASE),
-        re.compile(r"^ANNEX [I|V|X]+[\.:\s-].*", re.IGNORECASE),
-        re.compile(r"^Appendix [I|V|X]+[\.:\s-].*", re.IGNORECASE),
+        # Annexes & Appendices (Must NOT be in-text mentions like 'Annex X of the...')
+        re.compile(r"^Annex \d+\.\s+[A-Z]", re.IGNORECASE),
+        re.compile(r"^ANNEX [I|V|X]+(?:\s*[-–]\s*|\s+[A-Z])", re.IGNORECASE),
+        re.compile(r"^Appendix [I|V|X]+:\s+[A-Z]", re.IGNORECASE),
         re.compile(r"^LITERATURE\b", re.IGNORECASE),
-        re.compile(r"^\bReferences\b", re.IGNORECASE),
+        re.compile(r"^References\b", re.IGNORECASE),
     ]
 
     def __init__(self, pdf_path: str | Path):
@@ -85,10 +86,29 @@ class RegulatoryDocParser:
         current_chunk: List[str] = []
         current_section = "PREAMBLE"
         start_page = 1
+        in_toc = False
 
         for page in pages:
+            # Skip preliminary Table of Contents pages
+            first_lines = " ".join(page["lines"][:3]).lower()
+            if "table of contents" in first_lines:
+                in_toc = True
+            if in_toc:
+                # Body begins at Section 1 (page 6) or INTRODUCTION (page 2)
+                if any(re.match(r"^(?:1\s+)?Section 1[-–\s]*Introduction", l, re.IGNORECASE) for l in page["lines"]):
+                    in_toc = False
+                elif any(re.match(r"^INTRODUCTION", l, re.IGNORECASE) for l in page["lines"]):
+                    in_toc = False
+                else:
+                    continue
+
             for line in page["lines"]:
-                matched = any(pat.search(line) for pat in self.HEADING_PATTERNS)
+                # Ignore lines that are citations or references to an annex (e.g. "Annex 2 of the...")
+                if re.match(r"^(?:Annex|Appendix)\s+\w+\s+of\s+the\b", line, re.IGNORECASE):
+                    current_chunk.append(line)
+                    continue
+
+                matched = any(pat.match(line) for pat in self.HEADING_PATTERNS)
                 if matched:
                     if current_chunk:
                         chunks.append({
