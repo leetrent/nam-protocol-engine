@@ -41,28 +41,36 @@ class ProtocolMatcher:
 
         matched_protocol = None
         for proto in self.verified_protocols:
-            # Match 1: Ocular / Draize replacement (TG 492)
+            # Match 1: Ocular Severe Damage / BCOP replacement (TG 437)
+            # Evaluated first so explicit severe/bovine ocular queries route to BCOP
+            if "437" in proto.protocol_id and any(
+                k in query_lower for k in ("bcop", "bovine corneal", "severe eye damage", "corrosive to eyes", "cat 1 ocular")
+            ):
+                matched_protocol = proto
+                break
+
+            # Match 2: Ocular Irritation / RhCE replacement (TG 492)
             if "rhce" in proto.protocol_id and any(
                 k in query_lower for k in ("eye", "draize", "ocular", "cornea", "405")
             ):
                 matched_protocol = proto
                 break
 
-            # Match 2: Dermal Sensitisation replacement (TG 497)
+            # Match 3: Dermal Sensitisation replacement (TG 497)
             if "sensitisation" in proto.protocol_id and any(
                 k in query_lower for k in ("sensitisation", "sensitization", "llna", "lymph node", "429")
             ):
                 matched_protocol = proto
                 break
 
-            # Match 3: Dermal Irritation replacement (TG 439)
+            # Match 4: Dermal Irritation replacement (TG 439)
             if "439" in proto.protocol_id and any(
                 k in query_lower for k in ("skin irritation", "dermal irritation", "rhe", "404", "rabbit skin")
             ):
                 matched_protocol = proto
                 break
 
-        # Derive source filter from matched guideline ID (e.g. "439", "492", "497")
+        # Derive source filter from matched guideline ID (e.g. "437", "439", "492", "497")
         source_filter = None
         if matched_protocol and matched_protocol.citations:
             guideline_id = matched_protocol.citations[0].guideline_id

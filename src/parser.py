@@ -20,7 +20,7 @@ class RegulatoryDocParser:
     ]
 
     HEADING_PATTERNS = [
-        # Common OECD Guideline Sections (TG 439, TG 492, TG 497)
+        # Common OECD Guideline Sections (TG 437, TG 439, TG 492, TG 497)
         re.compile(r"^(?:1\s+)?Section 1[-–\s]*Introduction\b", re.IGNORECASE),
         re.compile(r"^1\.1\.\s+General Introduction\b", re.IGNORECASE),
         re.compile(r"^1\.2\s+DAs included in the Guideline\b", re.IGNORECASE),
@@ -35,6 +35,8 @@ class RegulatoryDocParser:
         re.compile(r"^FUNCTIONAL CONDITIONS\s*$", re.IGNORECASE),
         re.compile(r"^ACCEPTANCE CRITERIA\s*$", re.IGNORECASE),
         re.compile(r"^INTERPRETATION OF RESULTS", re.IGNORECASE),
+        re.compile(r"^Decision Criteria\s*$", re.IGNORECASE),
+        re.compile(r"^Study Acceptance Criteria\s*$", re.IGNORECASE),
         re.compile(r"^DATA AND REPORTING\s*$", re.IGNORECASE),
 
         # TG 497 Structural Sections

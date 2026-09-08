@@ -169,3 +169,38 @@ def test_eval_retrieval_tg439_proficiency_substances(search_index):
     assert len(results) > 0
     top_hit = results[0]
     assert "DEMONSTRATION OF PROFICIENCY" in top_hit["section_title"]
+    
+# =====================================================================
+# OECD TG 437 (BCOP / Severe Eye Damage) Benchmarks
+# =====================================================================
+   
+def test_eval_retrieval_tg437_ivis_cutoff(search_index):
+    """
+    Benchmark 11: Queries targeting IVIS decision thresholds in TG 437
+    must surface Decision Criteria, DATA AND REPORTING, or ANNEX 1 definitions.
+    """
+    query = "IVIS cut-off threshold 55 UN GHS Category 1 Decision Criteria"
+    results = search_index.search(query, top_k=2, source_filter="437")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 437."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("Decision Criteria", "DATA AND REPORTING", "ANNEX 1", "PRINCIPLE"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"   
+
+
+def test_eval_retrieval_tg437_proficiency_substances(search_index):
+    """
+    Benchmark 12: Queries targeting BCOP proficiency substances
+    must prioritize ANNEX 3 or DEMONSTRATION OF PROFICIENCY.
+    """
+    query = "thirteen proficiency substances demonstration of technical proficiency"
+    results = search_index.search(query, top_k=2, source_filter="437")
+
+    assert len(results) > 0
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("ANNEX 3", "DEMONSTRATION OF PROFICIENCY", "Table 1"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"

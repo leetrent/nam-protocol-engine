@@ -36,3 +36,12 @@ def test_matcher_finds_skin_irritation_alternative():
     assert result.protocol.protocol_id == "oecd-tg-439-rhe"
     assert "OECD TG 404" in result.recommendation
     
+def test_matcher_finds_bcop_alternative():
+    matcher = ProtocolMatcher()
+    result = matcher.find_alternative("bovine corneal opacity permeability severe eye damage Draize replacement")
+
+    assert result.matched is True
+    assert result.protocol is not None
+    assert result.protocol.protocol_id == "oecd-tg-437-bcop"
+    assert result.protocol.technology_category == "ex_vivo"
+    assert "OECD TG 405" in result.recommendation
