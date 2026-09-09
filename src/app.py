@@ -15,8 +15,9 @@ matcher = ProtocolMatcher()
 SAMPLE_QUERIES = [
     "Draize rabbit eye irritation test replacement",
     "severe eye damage bovine corneal opacity test",
-    "skin sensitization local lymph node assay LLNA alternative",
+    "in vitro skin corrosion necrosis sub-category 1A OECD TG 404",
     "acute dermal irritation rabbit test OECD 404 replacement",
+    "skin sensitization local lymph node assay LLNA alternative",
     "unrelated aerospace tensile stress evaluation",
 ]
 
@@ -82,12 +83,12 @@ def format_protocol_match(query: str):
 #with gr.Blocks(title="NAM Protocol Engine", theme=gr.themes.Soft()) as demo:
 with gr.Blocks(title="NAM Protocol Engine") as demo:
     gr.Markdown(
-        """
-        # 🔬 NAM Protocol Engine
-        ### Regulatory Alternative Matcher for Animal Toxicity Testing Guidelines
-        Query endpoint replacements across **OECD TG 437**, **TG 439**, **TG 492**, and **TG 497**.
-        """
-    )
+            """
+            # 🔬 NAM Protocol Engine
+            ### Regulatory Alternative Matcher for Animal Toxicity Testing Guidelines
+            Query endpoint replacements across **OECD TG 431**, **TG 437**, **TG 439**, **TG 492**, and **TG 497**.
+            """
+        )
 
     with gr.Row():
         with gr.Column(scale=4):
