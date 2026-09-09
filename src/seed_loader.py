@@ -118,6 +118,34 @@ def load_oecd_437_baseline() -> NAMProtocol:
         ],
     )
 
+def load_oecd_431_baseline() -> NAMProtocol:
+    """Instantiates validated ground-truth for OECD TG 431 RhE Skin Corrosion Assay."""
+    return NAMProtocol(
+        protocol_id="oecd-tg-431-rhe-corrosion",
+        protocol_name="In Vitro Skin Corrosion: Reconstructed Human Epidermis (RhE) Test Method",
+        technology_category="in_vitro",
+        endpoint=BiologicalEndpoint(
+            name="Skin Corrosion",
+            target_tissue="Dermal / Epidermal",
+            historical_animal_test="Acute Dermal Irritation / Corrosion Test (OECD TG 404)",
+        ),
+        regulatory_status="Full Regulatory Acceptance",
+        context_of_use=(
+            "Identifies corrosive chemicals (substances and mixtures) and non-corrosive chemicals, "
+            "and supports sub-categorisation into optional UN GHS Sub-category 1A versus a combination "
+            "of Sub-categories 1B-and-1C, as a stand-alone replacement for the rabbit skin test."
+        ),
+        citations=[
+            RegulatoryCitation(
+                standard_body="OECD",
+                guideline_id="OECD TG 431",
+                document_title="In Vitro Skin Corrosion: Reconstructed Human Epidermis (RHE) Test Method",
+                section_reference="Paragraphs 1-12, Tables 4 & 5",
+                official_url="https://doi.org/10.1787/9789264264618-en",
+            )
+        ],
+    )
+    
 if __name__ == "__main__":
     out_dir = Path("data/processed")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -127,6 +155,7 @@ if __name__ == "__main__":
         load_oecd_497_baseline(),
         load_oecd_439_baseline(),
         load_oecd_437_baseline(),
+        load_oecd_431_baseline(),
     ]
 
     for proto in protocols:

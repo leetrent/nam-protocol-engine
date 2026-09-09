@@ -45,3 +45,14 @@ def test_matcher_finds_bcop_alternative():
     assert result.protocol.protocol_id == "oecd-tg-437-bcop"
     assert result.protocol.technology_category == "ex_vivo"
     assert "OECD TG 405" in result.recommendation
+       
+def test_matcher_finds_skin_corrosion_alternative():
+    matcher = ProtocolMatcher()
+    result = matcher.find_alternative("in vitro skin corrosion necrosis sub-category 1A OECD TG 404 replacement")
+
+    assert result.matched is True
+    assert result.protocol is not None
+    assert result.protocol.protocol_id == "oecd-tg-431-rhe-corrosion"
+    assert result.protocol.technology_category == "in_vitro"
+    assert "OECD TG 404" in result.recommendation
+    assert len(result.supporting_evidence) > 0

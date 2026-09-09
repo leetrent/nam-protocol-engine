@@ -204,3 +204,38 @@ def test_eval_retrieval_tg437_proficiency_substances(search_index):
         any(k in s for k in ("ANNEX 3", "DEMONSTRATION OF PROFICIENCY", "Table 1"))
         for s in top_sections
     ), f"Unexpected sections retrieved: {top_sections}"
+    
+    
+# =====================================================================
+# OECD TG 431 (RhE Skin Corrosion) Benchmarks
+# =====================================================================
+
+def test_eval_retrieval_tg431_prediction_model(search_index):
+    """
+    Benchmark 13: Queries targeting TG 431 two-step prediction model thresholds
+    must surface Interpretation of Results or Acceptance Criteria.
+    """
+    query = "viability 50% 3 min 15% 60 min Sub-category 1A prediction model"
+    results = search_index.search(query, top_k=2, source_filter="431")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 431."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("Interpretation of Results", "Acceptance Criteria", "FUNCTIONAL CONDITIONS"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"
+
+
+def test_eval_retrieval_tg431_proficiency_chemicals(search_index):
+    """
+    Benchmark 14: Queries targeting TG 431 proficiency substances
+    must prioritize DEMONSTRATION OF PROFICIENCY.
+    """
+    query = "twelve proficiency substances bromoacetic acid boron trifluoride dihydrate"
+    results = search_index.search(query, top_k=2, source_filter="431")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 431."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        "DEMONSTRATION OF PROFICIENCY" in s for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"
