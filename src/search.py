@@ -39,57 +39,68 @@ class GuidelineIndex:
                 print(f"[ERROR] Failed to read {file_path}: {e}", file=sys.stderr)
 
     def search(
-        self,
-        query: str,
-        top_k: int = 3,
-        source_filter: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Ranks chunks using tokenized word frequencies with section header boosts.
-        Supports optional filtering by source filename or guideline prefix.
-        """
-        raw_tokens = re.findall(r"\b[a-z0-9_]{2,}\b", query.lower())
-        query_terms = [t for t in raw_tokens if t not in STOP_WORDS]
+            self,
+            query: str,
+            top_k: int = 3,
+            source_filter: Optional[str] = None
+        ) -> List[Dict[str, Any]]:
+            """
+            Ranks chunks using tokenized word frequencies with section header boosts.
+            Supports optional filtering by source filename or guideline prefix.
+            """
+            raw_tokens = re.findall(r"\b[a-z0-9_]{2,}\b", query.lower())
+            query_terms = [t for t in raw_tokens if t not in STOP_WORDS]
 
-        if not query_terms or not self.documents:
-            return []
+            if not query_terms or not self.documents:
+                return []
 
-        scored_docs = []
-        for doc in self.documents:
-            # Filter by document source if requested
-            source_file = doc.get("source_file", "")
-            if source_filter and source_filter.lower() not in source_file.lower():
-                continue
+            scored_docs = []
+            for doc in self.documents:
+                # Filter by document source if requested
+                source_file = doc.get("source_file", "")
+                if source_filter and source_filter.lower() not in source_file.lower():
+                    continue
 
-            content = doc.get("content", "")
-            section_title = doc.get("section_title", "")
-            content_lower = content.lower()
-            section_lower = section_title.lower()
+                content = doc.get("content", "")
+                section_title = doc.get("section_title", "")
+                content_lower = content.lower()
+                section_lower = section_title.lower()
 
-            # Ignore stub flowchart captions that lack substantive paragraphs
-            if len(content.strip().split()) < 30 and "ANNEX" in section_title:
-                continue
+                # Ignore stub flowchart captions that lack substantive paragraphs
+                if len(content.strip().split()) < 30 and "ANNEX" in section_title:
+                    continue
 
-            score = 0
-            for term in query_terms:
-                term_count = len(re.findall(rf"\b{re.escape(term)}\b", content_lower))
-                score += term_count
+                score = 0
+                matched_terms = 0
+                for term in query_terms:
+                    term_count = len(re.findall(rf"\b{re.escape(term)}\b", content_lower))
+                    if term_count > 0:
+                        matched_terms += 1
+                        score += term_count
 
-                if re.search(rf"\b{re.escape(term)}\b", section_lower):
-                    score += 25
+                    if re.search(rf"\b{re.escape(term)}\b", section_lower):
+                        score += 25
 
-            if score > 0:
-                scored_docs.append({
-                    "score": score,
-                    "section_title": section_title,
-                    "pages": f"{doc.get('start_page', '?')}-{doc.get('end_page', '?')}",
-                    "source_file": source_file,
-                    "excerpt": content[:280].replace("\n", " ") + "..."
-                })
+                # Relevance guard:
+                # - If filtering by source (guideline already matched), accept any hit with score > 0
+                # - If global search, require at least 2 distinct query terms matched AND score >= 3
+                #   (or a direct section header match with score >= 25)
+                if source_filter:
+                    qualifies = score > 0
+                else:
+                    qualifies = (matched_terms >= 2 and score >= 3) or (score >= 25)
 
-        scored_docs.sort(key=lambda x: x["score"], reverse=True)
-        return scored_docs[:top_k]
+                if qualifies:
+                    scored_docs.append({
+                        "score": score,
+                        "section_title": section_title,
+                        "pages": f"{doc.get('start_page', '?')}-{doc.get('end_page', '?')}",
+                        "source_file": source_file,
+                        "excerpt": content[:280].replace("\n", " ") + "..."
+                    })
 
+            scored_docs.sort(key=lambda x: x["score"], reverse=True)
+            return scored_docs[:top_k]
 
 if __name__ == "__main__":
     index = GuidelineIndex()
