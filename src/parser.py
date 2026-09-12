@@ -20,78 +20,43 @@ class RegulatoryDocParser:
     ]
     
     HEADING_PATTERNS = [
-        # Common OECD Guideline Sections (TG 431, TG 437, TG 439, TG 492, TG 497)
-        re.compile(r"^(?:1\s+)?Section 1[-–\s]*Introduction\b", re.IGNORECASE),
-        re.compile(r"^1\.1\.\s+General Introduction\b", re.IGNORECASE),
-        re.compile(r"^1\.2\s+DAs included in the Guideline\b", re.IGNORECASE),
-        re.compile(r"^1\.3\s+Limitations\b", re.IGNORECASE),
-        re.compile(r"^INTRODUCTION\s*$", re.IGNORECASE),
-        re.compile(r"^INITIAL CONSIDERATIONS(?:\s+AND\s+LIMITATIONS)?\s*$", re.IGNORECASE),
-        re.compile(r"^DEFINITIONS\s*$", re.IGNORECASE),
-        re.compile(r"^PRINCIPLE OF THE TEST\s*$", re.IGNORECASE),
-        re.compile(r"^DEMONSTRATION OF PROFICIENCY\s*$", re.IGNORECASE),
-        re.compile(r"^PROCEDURE\s*$", re.IGNORECASE),
-        re.compile(r"^(?:RhCE|RHE)\s+TEST METHOD COMPONENTS\s*$", re.IGNORECASE),
-        re.compile(r"^GENERAL CONDITIONS\s*$", re.IGNORECASE),
-        re.compile(r"^FUNCTIONAL CONDITIONS\s*$", re.IGNORECASE),
-        re.compile(r"^ACCEPTANCE CRITERIA\s*$", re.IGNORECASE),
-        re.compile(r"^INTERPRETATION OF RESULTS", re.IGNORECASE),
-        re.compile(r"^Decision Criteria\s*$", re.IGNORECASE),
-        re.compile(r"^Study Acceptance Criteria\s*$", re.IGNORECASE),
-        re.compile(r"^DATA AND REPORTING\s*$", re.IGNORECASE),
-        re.compile(r"^Test Report\s*$", re.IGNORECASE),
+            # Common OECD Guideline Sections (TG 431, TG 432, TG 437, TG 439, TG 492, TG 497)
+            re.compile(r"^(?:1\s+)?Section 1[-–\s]*Introduction\b", re.IGNORECASE),
+            re.compile(r"^1\.1\.\s+General Introduction\b", re.IGNORECASE),
+            re.compile(r"^1\.2\s+DAs included in the Guideline\b", re.IGNORECASE),
+            re.compile(r"^1\.3\s+Limitations\b", re.IGNORECASE),
+            re.compile(r"^INTRODUCTION\s*$", re.IGNORECASE),
+            re.compile(r"^INITIAL CONSIDERATIONS?(?:\s+AND\s+LIMITATIONS)?\s*$", re.IGNORECASE),
+            re.compile(r"^DEFINITIONS\s*$", re.IGNORECASE),
+            re.compile(r"^PRINCIPLE OF THE TEST(?:\s+METHOD)?\s*$", re.IGNORECASE),
+            re.compile(r"^DESCRIPTION OF THE TEST METHOD\s*$", re.IGNORECASE),
+            re.compile(r"^DEMONSTRATION OF PROFICIENCY\s*$", re.IGNORECASE),
+            re.compile(r"^PROCEDURE\s*$", re.IGNORECASE),
+            re.compile(r"^(?:RhCE|RHE)\s+TEST METHOD COMPONENTS\s*$", re.IGNORECASE),
+            re.compile(r"^GENERAL CONDITIONS\s*$", re.IGNORECASE),
+            re.compile(r"^FUNCTIONAL CONDITIONS\s*$", re.IGNORECASE),
+            re.compile(r"^ACCEPTANCE CRITERIA\s*$", re.IGNORECASE),
+            re.compile(r"^INTERPRETATION OF RESULTS", re.IGNORECASE),
+            re.compile(r"^Decision Criteria\s*$", re.IGNORECASE),
+            re.compile(r"^Study Acceptance Criteria\s*$", re.IGNORECASE),
+            re.compile(r"^DATA AND REPORTING\s*$", re.IGNORECASE),
+            re.compile(r"^Test Report\s*$", re.IGNORECASE),
 
-        # TG 497 Structural Sections
-        re.compile(r"^Part I\s+SECTION 2\b", re.IGNORECASE),
-        re.compile(r"^2\.1\s+[\"']?2 out of 3[\"']?\s+Defined Approach\b", re.IGNORECASE),
-        re.compile(r"^Part II\s+SECTION 3\b", re.IGNORECASE),
-        re.compile(r"^3\.1\s+[\"']?Integrated Testing Strategy\s*\(ITS\)[\"']?\s+Defined Approach\b", re.IGNORECASE),
-        re.compile(r"^Part III\s+SECTION 4\b", re.IGNORECASE),
-        re.compile(r"^4\.1\s+[\"']?SARA-ICE[\"']?\s+Defined Approach\b", re.IGNORECASE),
-        re.compile(r"^4\.2\s+[\"']?Regression-based[\"']?\s+Defined Approach\b", re.IGNORECASE),
+            # TG 497 Structural Sections
+            re.compile(r"^Part I\s+SECTION 2\b", re.IGNORECASE),
+            re.compile(r"^2\.1\s+[\"']?2 out of 3[\"']?\s+Defined Approach\b", re.IGNORECASE),
+            re.compile(r"^Part II\s+SECTION 3\b", re.IGNORECASE),
+            re.compile(r"^3\.1\s+[\"']?Integrated Testing Strategy\s*\(ITS\)[\"']?\s+Defined Approach\b", re.IGNORECASE),
+            re.compile(r"^Part III\s+SECTION 4\b", re.IGNORECASE),
+            re.compile(r"^4\.1\s+[\"']?SARA-ICE[\"']?\s+Defined Approach\b", re.IGNORECASE),
+            re.compile(r"^4\.2\s+[\"']?Regression-based[\"']?\s+Defined Approach\b", re.IGNORECASE),
 
-        # Annexes & Appendices (Must have punctuation delimiter: '-', '–', '.', or ':')
-        re.compile(r"^(?:ANNEX|Annex)\s+(?:\d+|[IVX]+)\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
-        re.compile(r"^(?:APPENDIX|Appendix)\s+(?:\d+|[IVX]+)\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
-        re.compile(r"^LITERATURE\s*$", re.IGNORECASE),
-        re.compile(r"^References\s*$", re.IGNORECASE),
+            # Annexes & Appendices (supports numbers, roman numerals, or letters like Annex A, Annex B)
+            re.compile(r"^(?:ANNEX|Annex)\s+(?:\d+|[IVX]+|[A-Z])\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
+            re.compile(r"^(?:APPENDIX|Appendix)\s+(?:\d+|[IVX]+|[A-Z])\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
+            re.compile(r"^LITERATURE\s*$", re.IGNORECASE),
+            re.compile(r"^References\s*$", re.IGNORECASE),
     ]
-
-    # HEADING_PATTERNS = [
-    #     # Common OECD Guideline Sections (TG 437, TG 439, TG 492, TG 497)
-    #     re.compile(r"^(?:1\s+)?Section 1[-–\s]*Introduction\b", re.IGNORECASE),
-    #     re.compile(r"^1\.1\.\s+General Introduction\b", re.IGNORECASE),
-    #     re.compile(r"^1\.2\s+DAs included in the Guideline\b", re.IGNORECASE),
-    #     re.compile(r"^1\.3\s+Limitations\b", re.IGNORECASE),
-    #     re.compile(r"^INTRODUCTION\s*$", re.IGNORECASE),
-    #     re.compile(r"^INITIAL CONSIDERATIONS AND LIMITATIONS\s*$", re.IGNORECASE),
-    #     re.compile(r"^PRINCIPLE OF THE TEST\s*$", re.IGNORECASE),
-    #     re.compile(r"^DEMONSTRATION OF PROFICIENCY\s*$", re.IGNORECASE),
-    #     re.compile(r"^PROCEDURE\s*$", re.IGNORECASE),
-    #     re.compile(r"^(?:RhCE|RHE)\s+TEST METHOD COMPONENTS\s*$", re.IGNORECASE),
-    #     re.compile(r"^GENERAL CONDITIONS\s*$", re.IGNORECASE),
-    #     re.compile(r"^FUNCTIONAL CONDITIONS\s*$", re.IGNORECASE),
-    #     re.compile(r"^ACCEPTANCE CRITERIA\s*$", re.IGNORECASE),
-    #     re.compile(r"^INTERPRETATION OF RESULTS", re.IGNORECASE),
-    #     re.compile(r"^Decision Criteria\s*$", re.IGNORECASE),
-    #     re.compile(r"^Study Acceptance Criteria\s*$", re.IGNORECASE),
-    #     re.compile(r"^DATA AND REPORTING\s*$", re.IGNORECASE),
-
-    #     # TG 497 Structural Sections
-    #     re.compile(r"^Part I\s+SECTION 2\b", re.IGNORECASE),
-    #     re.compile(r"^2\.1\s+[\"']?2 out of 3[\"']?\s+Defined Approach\b", re.IGNORECASE),
-    #     re.compile(r"^Part II\s+SECTION 3\b", re.IGNORECASE),
-    #     re.compile(r"^3\.1\s+[\"']?Integrated Testing Strategy\s*\(ITS\)[\"']?\s+Defined Approach\b", re.IGNORECASE),
-    #     re.compile(r"^Part III\s+SECTION 4\b", re.IGNORECASE),
-    #     re.compile(r"^4\.1\s+[\"']?SARA-ICE[\"']?\s+Defined Approach\b", re.IGNORECASE),
-    #     re.compile(r"^4\.2\s+[\"']?Regression-based[\"']?\s+Defined Approach\b", re.IGNORECASE),
-
-    #     # Annexes & Appendices (Must have punctuation delimiter: '-', '–', '.', or ':')
-    #     re.compile(r"^(?:ANNEX|Annex)\s+(?:\d+|[IVX]+)\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
-    #     re.compile(r"^(?:APPENDIX|Appendix)\s+(?:\d+|[IVX]+)\s*[-–\.:]\s*[A-Za-z]", re.IGNORECASE),
-    #     re.compile(r"^LITERATURE\s*$", re.IGNORECASE),
-    #     re.compile(r"^References\s*$", re.IGNORECASE),
-    # ]
 
     def __init__(self, pdf_path: str | Path):
         self.pdf_path = Path(pdf_path)

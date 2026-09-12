@@ -146,6 +146,36 @@ def load_oecd_431_baseline() -> NAMProtocol:
         ],
     )
     
+def load_oecd_432_baseline() -> NAMProtocol:
+    """Instantiates validated ground-truth for OECD TG 432 In Vitro 3T3 NRU Phototoxicity."""
+    return NAMProtocol(
+        protocol_id="oecd-tg-432-3t3-nru",
+        protocol_name="In Vitro 3T3 NRU Phototoxicity Test",
+        technology_category="in_vitro",
+        endpoint=BiologicalEndpoint(
+            name="Phototoxicity",
+            target_tissue="Balb/c 3T3 Mouse Fibroblasts (Cellular / Dermal Surrogate)",
+            historical_animal_test="In Vivo Acute Phototoxicity / Photo-irritation in Animals",
+        ),
+        regulatory_status="Full Regulatory Acceptance",
+        context_of_use=(
+            "Identifies the phototoxic potential of chemicals activated by exposure to light, "
+            "evaluating photo-cytotoxicity through relative viability reduction in Balb/c 3T3 cells "
+            "(+UVA vs -UVA) using PIF (Photo-Irritation Factor) and MPE (Mean Photo Effect) metrics."
+        ),
+        citations=[
+            RegulatoryCitation(
+                standard_body="OECD",
+                guideline_id="OECD TG 432",
+                document_title="In Vitro 3T3 NRU Phototoxicity Test",
+                section_reference="Paragraphs 1-8, 53-58, Table 1",
+                official_url="https://doi.org/10.1787/9789264071162-en",
+            )
+        ],
+    )    
+    
+    
+    
 if __name__ == "__main__":
     out_dir = Path("data/processed")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -156,6 +186,7 @@ if __name__ == "__main__":
         load_oecd_439_baseline(),
         load_oecd_437_baseline(),
         load_oecd_431_baseline(),
+        load_oecd_432_baseline(),
     ]
 
     for proto in protocols:

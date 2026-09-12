@@ -239,3 +239,54 @@ def test_eval_retrieval_tg431_proficiency_chemicals(search_index):
     assert any(
         "DEMONSTRATION OF PROFICIENCY" in s for s in top_sections
     ), f"Unexpected sections retrieved: {top_sections}"
+    
+    
+# =====================================================================
+# OECD TG 432 (In Vitro 3T3 NRU Phototoxicity) Benchmarks
+# =====================================================================
+
+def test_eval_retrieval_tg432_pif_mpe_cutoffs(search_index):
+    """
+    Benchmark 15: Queries targeting PIF and MPE prediction thresholds
+    must surface Interpretation of Results or DATA AND REPORTING in TG 432.
+    """
+    query = "PIF 2 5 MPE 0.1 0.15 prediction phototoxicity equivocal"
+    results = search_index.search(query, top_k=2, source_filter="432")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 432."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("Interpretation of Results", "DATA AND REPORTING"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"
+
+
+def test_eval_retrieval_tg432_mec_screening(search_index):
+    """
+    Benchmark 16: Queries targeting the molar extinction coefficient (MEC) screening
+    must prioritize INITIAL CONSIDERATION or Annex B in TG 432.
+    """
+    query = "molar extinction coefficient MEC 1000 photoreactive absorption spectrum"
+    results = search_index.search(query, top_k=2, source_filter="432")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 432."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("INITIAL CONSIDERATION", "Annex B", "Annex A"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"
+
+
+def test_eval_retrieval_tg432_irradiation_conditions(search_index):
+    """
+    Benchmark 17: Queries targeting UVA irradiation dose (5 J/cm2) and positive controls
+    must locate DESCRIPTION OF THE TEST METHOD in TG 432.
+    """
+    query = "dose 5 J/cm2 UVA irradiance chlorpromazine positive control"
+    results = search_index.search(query, top_k=2, source_filter="432")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 432."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        "DESCRIPTION OF THE TEST METHOD" in s for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"

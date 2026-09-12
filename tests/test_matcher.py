@@ -56,3 +56,14 @@ def test_matcher_finds_skin_corrosion_alternative():
     assert result.protocol.technology_category == "in_vitro"
     assert "OECD TG 404" in result.recommendation
     assert len(result.supporting_evidence) > 0
+    
+def test_matcher_finds_phototoxicity_alternative():
+    matcher = ProtocolMatcher()
+    result = matcher.find_alternative("in vitro 3T3 NRU phototoxicity photo-irritation testing")
+
+    assert result.matched is True
+    assert result.protocol is not None
+    assert result.protocol.protocol_id == "oecd-tg-432-3t3-nru"
+    assert result.protocol.technology_category == "in_vitro"
+    assert "In Vivo Acute Phototoxicity" in result.recommendation
+    assert len(result.supporting_evidence) > 0

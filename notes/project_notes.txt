@@ -1,0 +1,28 @@
+Step 1: Update src/schemas.py
+uv run pytest tests/test_schemas.py
+
+Step 2: Update src/seed_loader.py
+uv run python src/seed_loader.py
+
+Step 3: Update and Run src/parser.py
+uv run python src/parser.py
+
+Step 4: Update src/matcher.py
+uv run pytest
+
+Step 5: Update tests/test_matcher.py
+
+Step 6: Update tests/test_evals.py
+
+Step 6: Run Pytest
+uv run pytest
+
+
+All 32 tests are green across the entire suite. The ingestion of OECD TG 432 (In Vitro 3T3 NRU Phototoxicity Test) is complete and fully integrated across the pipeline:
+
+Step 1 (schemas.py): Model constraints validated without modification.
+Step 2 (seed_loader.py): Baseline verified record generated at data/processed/oecd-tg-432-3t3-nru_verified.json.  
+Step 3 (parser.py): Layout-aware parsing extracted 10 structured sections from oecd_tg_432.pdf.  
+Step 4 (matcher.py): Protocol matcher successfully routes phototoxicity, photo-irritation, and 3T3 NRU queries.
+Step 5 (test_matcher.py): Unit test verified recommendation string and evidence generation.
+Step 6 (test_evals.py): 3 new benchmarks verified retrieval precision for PIF/MPE cutoffs, MEC screening thresholds, and irradiation parameters.  

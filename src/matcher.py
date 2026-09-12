@@ -84,7 +84,24 @@ class ProtocolMatcher:
                 matched_protocol = proto
                 break
 
-        # Derive source filter from matched guideline ID (e.g. "431", "437", "439", "492", "497")
+            # Match 6: Phototoxicity replacement (TG 432)
+            if "432" in proto.protocol_id and any(
+                k in query_lower for k in (
+                    "phototoxicity",
+                    "phototoxic",
+                    "photo-irritation",
+                    "photoirritation",
+                    "3t3",
+                    "nru",
+                    "432",
+                    "solar simulator",
+                    "light exposure",
+                )
+            ):
+                matched_protocol = proto
+                break
+
+        # Derive source filter from matched guideline ID (e.g. "431", "432", "437", "439", "492", "497")
         source_filter = None
         if matched_protocol and matched_protocol.citations:
             guideline_id = matched_protocol.citations[0].guideline_id
