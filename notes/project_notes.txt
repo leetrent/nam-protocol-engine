@@ -25,4 +25,7 @@ Step 2 (seed_loader.py): Baseline verified record generated at data/processed/oe
 Step 3 (parser.py): Layout-aware parsing extracted 10 structured sections from oecd_tg_432.pdf.  
 Step 4 (matcher.py): Protocol matcher successfully routes phototoxicity, photo-irritation, and 3T3 NRU queries.
 Step 5 (test_matcher.py): Unit test verified recommendation string and evidence generation.
-Step 6 (test_evals.py): 3 new benchmarks verified retrieval precision for PIF/MPE cutoffs, MEC screening thresholds, and irradiation parameters.  
+Step 6 (test_evals.py): 3 new benchmarks verified retrieval precision for PIF/MPE cutoffs, MEC screening thresholds, and irradiation parameters.
+
+
+ uv run pytest tests/test_strategy.p

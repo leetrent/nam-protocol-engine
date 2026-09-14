@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from src.matcher import ProtocolMatcher, MatchResult
 
 
@@ -20,6 +20,81 @@ class TieredStrategyPlan:
     hazard_intent: str
     steps: List[StrategyStep] = field(default_factory=list)
     dossier_text: str = ""
+
+
+def evaluate_phototoxicity(
+    pif: Optional[float] = None,
+    mpe: Optional[float] = None,
+    mec: Optional[float] = None,
+) -> Dict[str, Any]:
+    """
+    Evaluates phototoxic potential according to OECD TG 432 & ICH S10 decision criteria.
+
+    - MEC < 1000 L/(mol*cm): Photoreactivity unlikely, biological testing not required.
+    - PIF < 2 or MPE < 0.1: No Phototoxicity (Negative).
+    - 2 <= PIF < 5 or 0.1 <= MPE < 0.15: Equivocal Phototoxicity (Probable).
+    - PIF >= 5 or MPE >= 0.15: Phototoxic (Positive).
+    """
+    if mec is not None and mec < 1000.0 and pif is None and mpe is None:
+        return {
+            "classification": "Non-Photoreactive (Waived)",
+            "prediction": "No Phototoxicity",
+            "basis": f"MEC = {mec} L/(mol*cm) < 1000 (OECD TG 101 / Annex B)",
+            "regulatory_action": "Biological testing not considered necessary under OECD TG 432 / ICH S10.",
+            "requires_confirmatory": False,
+        }
+
+    if pif is not None:
+        if pif < 2.0:
+            classification = "No Phototoxicity"
+            prediction = "Negative"
+            action = "Classify as Non-Phototoxic. No further phototoxicity testing required."
+            equivocal = False
+        elif 2.0 <= pif < 5.0:
+            classification = "Equivocal Phototoxicity"
+            prediction = "Probable / Borderline"
+            action = "Consider confirmatory testing (e.g., in vitro reconstructed human 3D skin model phototoxicity test)."
+            equivocal = True
+        else:
+            classification = "Phototoxicity"
+            prediction = "Positive"
+            action = "Classify as Phototoxic under UN GHS / EU REACH criteria."
+            equivocal = False
+
+        return {
+            "classification": classification,
+            "prediction": prediction,
+            "basis": f"PIF = {pif:.2f}",
+            "regulatory_action": action,
+            "requires_confirmatory": equivocal,
+        }
+
+    if mpe is not None:
+        if mpe < 0.10:
+            classification = "No Phototoxicity"
+            prediction = "Negative"
+            action = "Classify as Non-Phototoxic based on complete concentration-response analysis."
+            equivocal = False
+        elif 0.10 <= mpe < 0.15:
+            classification = "Equivocal Phototoxicity"
+            prediction = "Probable / Borderline"
+            action = "Consider confirmatory testing (e.g., in vitro human 3D skin model phototoxicity test)."
+            equivocal = True
+        else:
+            classification = "Phototoxicity"
+            prediction = "Positive"
+            action = "Classify as Phototoxic under UN GHS / EU REACH criteria."
+            equivocal = False
+
+        return {
+            "classification": classification,
+            "prediction": prediction,
+            "basis": f"MPE = {mpe:.3f}",
+            "regulatory_action": action,
+            "requires_confirmatory": equivocal,
+        }
+
+    raise ValueError("Must provide at least one valid metric: 'pif', 'mpe', or 'mec'.")
 
 
 class RegulatoryStrategyPlanner:
@@ -125,6 +200,25 @@ class RegulatoryStrategyPlanner:
                 )
             )
 
+        elif endpoint == "Phototoxicity":
+            photo_match = self.matcher.find_alternative("in vitro 3T3 NRU phototoxicity OECD TG 432")
+            plan.steps.append(
+                StrategyStep(
+                    step_number=1,
+                    title="In Vitro 3T3 NRU Phototoxicity Test (OECD TG 432)",
+                    rationale=(
+                        "Fully replaces legacy animal phototoxicity and photo-irritation testing in mammals. "
+                        "Evaluates photo-cytotoxicity in Balb/c 3T3 fibroblasts with and without UVA irradiation."
+                    ),
+                    match_result=photo_match,
+                    decision_threshold=(
+                        "PIF < 2 or MPE < 0.1 -> No Phototoxicity (Negative). "
+                        "2 <= PIF < 5 or 0.1 <= MPE < 0.15 -> Equivocal Phototoxicity (Probable). "
+                        "PIF >= 5 or MPE >= 0.15 -> Phototoxic (Positive)."
+                    ),
+                )
+            )
+
         # Generate the formatted dossier summary
         plan.dossier_text = self._compile_dossier(plan)
         return plan
@@ -141,8 +235,8 @@ class RegulatoryStrategyPlanner:
             (
                 f"In accordance with 3Rs principles and {plan.framework} regulatory acceptance criteria, "
                 f"this assessment specifies a non-animal testing cascade for '{plan.endpoint_battery}'. "
-                "Animal testing (e.g., OECD TG 404, TG 405, TG 429) is waived in favor of fully accepted "
-                "OECD Test Guidelines (Mutual Acceptance of Data - MAD compliant).\n"
+                "Animal testing (e.g., OECD TG 404, TG 405, TG 429, animal phototoxicity) is waived in favor "
+                "of fully accepted OECD Test Guidelines (Mutual Acceptance of Data - MAD compliant).\n"
             ),
             "## 2. Testing Battery & Decision Criteria",
         ]
