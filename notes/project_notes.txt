@@ -29,3 +29,10 @@ Step 6 (test_evals.py): 3 new benchmarks verified retrieval precision for PIF/MP
 
 
  uv run pytest tests/test_strategy.p
+
+ $ uv run python -c 'from src.app import build_app, execute_strategy, run_phototoxicity_calc; demo = build_app(); res, dos = execute_strategy("UN GHS / EU REACH", "Phototoxicity", "Liquid", "Screening Battery"); calc = run_phototoxicity_calc(3.5, None, None); print("UI functions verified successfully")'
+UI functions verified successfully
+
+uv run pytest tests/test_ui.py
+
+uv run pytest

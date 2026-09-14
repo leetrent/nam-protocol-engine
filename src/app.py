@@ -7,7 +7,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.matcher import ProtocolMatcher
-from src.strategy import RegulatoryStrategyPlanner
+from src.strategy import RegulatoryStrategyPlanner, evaluate_phototoxicity
 
 matcher = ProtocolMatcher()
 planner = RegulatoryStrategyPlanner(matcher)
@@ -18,6 +18,7 @@ SAMPLE_QUERIES = [
     "in vitro skin corrosion necrosis sub-category 1A OECD TG 404",
     "acute dermal irritation rabbit test OECD 404 replacement",
     "skin sensitization local lymph node assay LLNA alternative",
+    "in vitro 3T3 NRU phototoxicity photo-irritation testing",
     "unrelated aerospace tensile stress evaluation",
 ]
 
@@ -89,6 +90,35 @@ def format_protocol_match(query_text: str):
 
     return details_md, citations_md, json_payload
 
+def run_phototoxicity_calc(pif_val: float | None, mpe_val: float | None, mec_val: float | None):
+    pif = float(pif_val) if pif_val not in (None, "") and float(pif_val) > 0 else None
+    mpe = float(mpe_val) if mpe_val not in (None, "") and float(mpe_val) > 0 else None
+    mec = float(mec_val) if mec_val not in (None, "") and float(mec_val) > 0 else None
+
+    if pif is None and mpe is None and mec is None:
+        return "⚠️ Please provide at least one metric: PIF, MPE, or MEC."
+
+    try:
+        eval_result = evaluate_phototoxicity(pif=pif, mpe=mpe, mec=mec)
+    except Exception as e:
+        return f"⚠️ Evaluation error: {str(e)}"
+
+    badge_color = (
+        "green"
+        if eval_result["prediction"] == "Negative" or "Waived" in eval_result["classification"]
+        else "orange"
+        if eval_result["requires_confirmatory"]
+        else "red"
+    )
+
+    return f"""
+### Assessment: <span style='color:{badge_color};'>{eval_result['classification']}</span>
+* **Prediction:** **{eval_result['prediction']}**
+* **Quantitative Basis:** `{eval_result['basis']}`
+* **Regulatory Recommendation:** {eval_result['regulatory_action']}
+* **Requires Confirmatory Testing:** `{'Yes (e.g. 3D RhE phototoxicity model)' if eval_result['requires_confirmatory'] else 'No'}`
+"""
+
 
 def build_app():
     with gr.Blocks(title="NAM Protocol Engine") as demo:
@@ -96,7 +126,7 @@ def build_app():
             """
             # 🔬 NAM Protocol Engine
             ### Regulatory Decision Dashboard for Animal Testing Alternatives (3Rs)
-            Standardized non-animal replacement workflows across **OECD TG 431**, **TG 437**, **TG 439**, **TG 492**, and **TG 497**.
+            Standardized non-animal replacement workflows across **OECD TG 431**, **TG 432**, **TG 437**, **TG 439**, **TG 492**, and **TG 497**.
             """
         )
 
@@ -118,6 +148,7 @@ def build_app():
                                 "Dermal (Corrosion & Irritation)",
                                 "Ocular (Severe Damage & Irritation)",
                                 "Skin Sensitisation",
+                                "Phototoxicity",
                             ],
                             value="Dermal (Corrosion & Irritation)",
                         )
@@ -132,6 +163,7 @@ def build_app():
                                 "Full Battery",
                                 "Top-Down (Suspected High Hazard)",
                                 "Bottom-Up (Suspected Low/No Hazard)",
+                                "Screening Battery",
                             ],
                             value="Full Battery",
                         )
@@ -157,7 +189,7 @@ def build_app():
                     with gr.Column(scale=2):
                         query_input = gr.Textbox(
                             label="Enter Endpoint, Animal Test, or Assay Name",
-                            placeholder="e.g. Draize rabbit eye test, skin sensitisation LLNA, acute dermal irritation...",
+                            placeholder="e.g. Draize rabbit eye test, skin sensitisation LLNA, in vitro phototoxicity...",
                             lines=2,
                         )
                         submit_btn = gr.Button("Find Regulatory Alternative", variant="primary")
@@ -198,20 +230,53 @@ def build_app():
                     outputs=[query_input, details_output, citations_output, json_output],
                 )
 
+            # Tab 3: Quantitative NAM Assessment Workbench
+            with gr.TabItem("🧮 Quantitative NAM Decision Tools"):
+                gr.Markdown(
+                    """
+                    ### OECD TG 432 / ICH S10 Phototoxicity Decision Calculator
+                    Evaluate quantitative phototoxicity metrics:
+                    * **MEC < 1000 L/(mol·cm):** Waives biological testing (photoreactivity unlikely).
+                    * **PIF < 2** or **MPE < 0.1:** Non-phototoxic (Negative).
+                    * **2 ≤ PIF < 5** or **0.1 ≤ MPE < 0.15:** Equivocal phototoxic (Borderline).
+                    * **PIF ≥ 5** or **MPE ≥ 0.15:** Phototoxic (Positive).
+                    """
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        mec_in = gr.Number(
+                            label="Molar Extinction Coefficient (MEC) [L/(mol·cm)]",
+                            placeholder="e.g. 450 or 1200",
+                            value=None,
+                        )
+                        pif_in = gr.Number(
+                            label="Photo-Irritation Factor (PIF)",
+                            placeholder="e.g. 1.5, 3.2, 6.8",
+                            value=None,
+                        )
+                        mpe_in = gr.Number(
+                            label="Mean Photo Effect (MPE)",
+                            placeholder="e.g. 0.05, 0.12, 0.22",
+                            value=None,
+                        )
+                        calc_btn = gr.Button("Evaluate Decision Criteria", variant="primary")
+
+                    with gr.Column(scale=2):
+                        calc_out = gr.Markdown("### Evaluation Results\n*Enter metrics and click evaluate.*")
+
+                calc_btn.click(
+                    fn=run_phototoxicity_calc,
+                    inputs=[pif_in, mpe_in, mec_in],
+                    outputs=[calc_out],
+                )
+
     return demo
 
 
 demo = build_app()
 
-# if __name__ == "__main__":
-#     demo.launch(
-#         server_name="127.0.0.1",
-#         server_port=7860,
-#         theme=gr.themes.Soft(),
-#     )
-    
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=7860
+        server_port=7860,
     )
