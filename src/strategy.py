@@ -96,6 +96,90 @@ def evaluate_phototoxicity(
 
     raise ValueError("Must provide at least one valid metric: 'pif', 'mpe', or 'mec'.")
 
+def evaluate_dpra(
+    cysteine_depletion: Optional[float] = None,
+    lysine_depletion: Optional[float] = None,
+) -> Dict[str, Any]:
+    """
+    Evaluates in chemico skin sensitisation peptide reactivity according to OECD TG 442C (Appendix I - DPRA).
+
+    - Cysteine 1:10 & Lysine 1:50 Model:
+        * Mean depletion <= 6.38%: No or minimal reactivity -> Negative (Non-sensitiser)
+        * 6.38% < Mean depletion <= 22.62%: Low reactivity -> Positive (Sensitiser)
+        * 22.62% < Mean depletion <= 42.47%: Moderate reactivity -> Positive (Sensitiser)
+        * Mean depletion > 42.47%: High reactivity -> Positive (Sensitiser)
+    - Cysteine 1:10 Only Model (used when lysine co-elutes or precipitates):
+        * Cysteine depletion <= 13.89%: No or minimal reactivity -> Negative (Non-sensitiser)
+        * 13.89% < Cysteine depletion <= 90.0%: Moderate/Low reactivity -> Positive (Sensitiser)
+        * Cysteine depletion > 90.0%: High reactivity -> Positive (Sensitiser)
+    """
+    if cysteine_depletion is None and lysine_depletion is None:
+        raise ValueError("Must provide at least 'cysteine_depletion' to evaluate DPRA criteria.")
+
+    # Model 1: Both peptides available (Standard 1:10 Cys + 1:50 Lys model)
+    if cysteine_depletion is not None and lysine_depletion is not None:
+        mean_depletion = (cysteine_depletion + lysine_depletion) / 2.0
+        if mean_depletion <= 6.38:
+            reactivity_class = "No or minimal reactivity"
+            prediction = "Negative (Non-sensitiser)"
+            action = "Classify as Non-sensitiser or combine in Defined Approach (OECD TG 497)."
+            is_sensitiser = False
+        elif 6.38 < mean_depletion <= 22.62:
+            reactivity_class = "Low reactivity"
+            prediction = "Positive (Sensitiser)"
+            action = "Supports UN GHS Category 1 classification within IATA / Defined Approach (OECD TG 497)."
+            is_sensitiser = True
+        elif 22.62 < mean_depletion <= 42.47:
+            reactivity_class = "Moderate reactivity"
+            prediction = "Positive (Sensitiser)"
+            action = "Supports UN GHS Category 1 classification within IATA / Defined Approach (OECD TG 497)."
+            is_sensitiser = True
+        else:
+            reactivity_class = "High reactivity"
+            prediction = "Positive (Sensitiser)"
+            action = "Supports UN GHS Category 1 / Sub-category 1A classification within IATA / TG 497."
+            is_sensitiser = True
+
+        return {
+            "model_applied": "Cysteine 1:10 and Lysine 1:50 Prediction Model",
+            "mean_depletion": round(mean_depletion, 2),
+            "reactivity_class": reactivity_class,
+            "prediction": prediction,
+            "basis": f"Mean Depletion = {mean_depletion:.2f}% (Cys: {cysteine_depletion:.2f}%, Lys: {lysine_depletion:.2f}%)",
+            "regulatory_action": action,
+            "is_sensitiser": is_sensitiser,
+        }
+
+    # Model 2: Cysteine 1:10 Only Model
+    if cysteine_depletion is not None:
+        if cysteine_depletion <= 13.89:
+            reactivity_class = "No or minimal reactivity"
+            prediction = "Negative (Non-sensitiser)"
+            action = "Classify as Non-sensitiser or combine in Defined Approach (OECD TG 497)."
+            is_sensitiser = False
+        elif 13.89 < cysteine_depletion <= 90.0:
+            reactivity_class = "Low to Moderate reactivity"
+            prediction = "Positive (Sensitiser)"
+            action = "Supports UN GHS Category 1 classification within IATA / Defined Approach (OECD TG 497)."
+            is_sensitiser = True
+        else:
+            reactivity_class = "High reactivity"
+            prediction = "Positive (Sensitiser)"
+            action = "Supports UN GHS Category 1 / Sub-category 1A classification within IATA / TG 497."
+            is_sensitiser = True
+
+        return {
+            "model_applied": "Cysteine 1:10 Only Prediction Model",
+            "mean_depletion": round(cysteine_depletion, 2),
+            "reactivity_class": reactivity_class,
+            "prediction": prediction,
+            "basis": f"Cysteine Depletion = {cysteine_depletion:.2f}% (Lysine unavailable/co-eluting)",
+            "regulatory_action": action,
+            "is_sensitiser": is_sensitiser,
+        }
+
+    raise ValueError("Lysine depletion alone is insufficient under OECD TG 442C without Cysteine.")
+
 
 class RegulatoryStrategyPlanner:
     """Plans tiered testing batteries according to OECD and UN GHS testing strategies."""
@@ -186,10 +270,29 @@ class RegulatoryStrategyPlanner:
                 )
 
         elif endpoint == "Skin Sensitisation":
-            sens_match = self.matcher.find_alternative("skin sensitisation defined approach OECD TG 497")
+            # Tier 1: In chemico MIE / Key Event 1 screening (OECD TG 442C DPRA)
+            dpra_match = self.matcher.find_alternative("in chemico direct peptide reactivity assay OECD TG 442C")
             plan.steps.append(
                 StrategyStep(
                     step_number=1,
+                    title="Key Event 1: Direct Peptide Reactivity Assay (OECD TG 442C DPRA)",
+                    rationale=(
+                        "Quantifies covalent binding of electrophilic test substances to synthetic cysteine and lysine "
+                        "peptides, addressing the Molecular Initiating Event of the skin sensitisation AOP."
+                    ),
+                    match_result=dpra_match,
+                    decision_threshold=(
+                        "Mean peptide depletion > 6.38% (or Cys-only > 13.89%) indicates reactivity / sensitiser. "
+                        "Serves as an input to Defined Approaches (OECD TG 497) or IATA."
+                    ),
+                )
+            )
+
+            # Tier 2: Defined Approaches Battery (OECD TG 497)
+            sens_match = self.matcher.find_alternative("skin sensitisation defined approach OECD TG 497")
+            plan.steps.append(
+                StrategyStep(
+                    step_number=2,
                     title="Stand-alone Defined Approach Battery (OECD TG 497)",
                     rationale="Replaces murine LLNA (TG 429) using in silico + in chemico/in vitro assays.",
                     match_result=sens_match,

@@ -36,7 +36,6 @@ def test_ocular_top_down_strategy(planner):
     assert plan.steps[0].match_result.protocol.protocol_id == "oecd-tg-437-bcop"
     assert "IVIS > 55" in plan.steps[0].decision_threshold
 
-
 def test_sensitisation_da_strategy(planner):
     plan = planner.generate_strategy(
         framework="UN GHS",
@@ -45,9 +44,16 @@ def test_sensitisation_da_strategy(planner):
         hazard_intent="Full Battery",
     )
 
-    assert len(plan.steps) == 1
-    assert plan.steps[0].match_result.protocol.protocol_id == "oecd-tg-497-da-sensitisation"
-    assert "2 out of 3" in plan.steps[0].decision_threshold
+    assert len(plan.steps) == 2
+    # Step 1: In chemico Key Event 1 (DPRA)
+    assert "OECD TG 442C" in plan.steps[0].title
+    assert plan.steps[0].match_result.protocol.protocol_id == "oecd-tg-442c-dpra"
+    assert "6.38%" in plan.steps[0].decision_threshold
+
+    # Step 2: Defined Approach Battery (TG 497)
+    assert "OECD TG 497" in plan.steps[1].title
+    assert plan.steps[1].match_result.protocol.protocol_id == "oecd-tg-497-da-sensitisation"
+    assert "2 out of 3" in plan.steps[1].decision_threshold
 
 
 def test_phototoxicity_strategy_plan(planner):
@@ -104,3 +110,38 @@ def test_evaluate_phototoxicity_mec_screening():
     res_mec = evaluate_phototoxicity(mec=450.0)
     assert res_mec["prediction"] == "No Phototoxicity"
     assert "Waived" in res_mec["classification"]
+    
+from src.strategy import evaluate_dpra
+
+
+def test_evaluate_dpra_mean_negative():
+    res = evaluate_dpra(cysteine_depletion=3.5, lysine_depletion=2.1)
+    assert res["prediction"] == "Negative (Non-sensitiser)"
+    assert res["reactivity_class"] == "No or minimal reactivity"
+    assert res["is_sensitiser"] is False
+    assert res["mean_depletion"] == 2.8
+
+
+def test_evaluate_dpra_mean_low_positive():
+    res = evaluate_dpra(cysteine_depletion=12.0, lysine_depletion=8.0)
+    assert res["prediction"] == "Positive (Sensitiser)"
+    assert res["reactivity_class"] == "Low reactivity"
+    assert res["is_sensitiser"] is True
+    assert res["mean_depletion"] == 10.0
+
+
+def test_evaluate_dpra_cysteine_only_fallback():
+    # Co-elution scenario where lysine is omitted
+    res = evaluate_dpra(cysteine_depletion=18.5)
+    assert res["model_applied"] == "Cysteine 1:10 Only Prediction Model"
+    assert res["prediction"] == "Positive (Sensitiser)"
+    assert res["is_sensitiser"] is True
+
+
+def test_evaluate_dpra_rejects_lysine_only_or_empty():
+    import pytest
+    with pytest.raises(ValueError, match="at least 'cysteine_depletion'"):
+        evaluate_dpra()
+
+    with pytest.raises(ValueError, match="Lysine depletion alone is insufficient"):
+        evaluate_dpra(lysine_depletion=15.0)    

@@ -67,3 +67,25 @@ def test_matcher_finds_phototoxicity_alternative():
     assert result.protocol.technology_category == "in_vitro"
     assert "In Vivo Acute Phototoxicity" in result.recommendation
     assert len(result.supporting_evidence) > 0
+    
+def test_matcher_finds_dpra_key_event_1_alternative():
+    matcher = ProtocolMatcher()
+    result = matcher.find_alternative("in chemico direct peptide reactivity assay covalent protein binding Key Event 1")
+
+    assert result.matched is True
+    assert result.protocol is not None
+    assert result.protocol.protocol_id == "oecd-tg-442c-dpra"
+    assert result.protocol.technology_category == "in_chemico"
+    assert "OECD TG 429" in result.recommendation or "LLNA" in result.recommendation
+    assert len(result.supporting_evidence) > 0
+
+
+def test_matcher_distinguishes_dpra_from_defined_approach():
+    matcher = ProtocolMatcher()
+    # Explicit peptide depletion intent routes to 442C, not 497
+    dpra_res = matcher.find_alternative("DPRA synthetic peptide depletion assay")
+    assert dpra_res.protocol.protocol_id == "oecd-tg-442c-dpra"
+
+    # General skin sensitisation replacement routes to TG 497 Defined Approaches
+    da_res = matcher.find_alternative("skin sensitisation replacement strategy for LLNA")
+    assert da_res.protocol.protocol_id == "oecd-tg-497-da-sensitisation"

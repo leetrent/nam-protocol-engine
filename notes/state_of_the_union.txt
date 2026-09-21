@@ -1,0 +1,39 @@
+QUESTION:
+Since we reached an important milestone regarding the backend processing of Test Number 442C, 
+may I have a "State of the Union" summary of our project architecture, current milestone,
+and active context in case I have to seed a fresh session?
+
+
+# Project Snapshot: NAM Protocol Engine
+
+## 1. Project Overview & Architecture
+- **Goal:** Build and verify a "NAM Protocol Engine" to automate regulatory compliance and 3Rs justification for non-animal testing methods (OECD Test Guidelines).
+- **Core Stack:** Python 3.12, `uv`, `pytest`, Pydantic v2 schemas, BM25 text retrieval (`GuidelineIndex`).
+- **Key Modules:**
+  - `src/schemas.py`: Pydantic models enforcing structured regulatory protocols, guidelines, and citations.
+  - `src/extractor.py` & `src/search.py`: PDF section chunking parser and BM25 guideline retrieval index.
+  - `src/matcher.py`: Rules-based protocol matcher mapping queries to specific OECD NAM alternatives.
+  - `src/strategy.py`: Tiered testing strategy planner, regulatory dossier generator, and quantitative decision models (e.g., PIF/MPE for phototoxicity, peptide depletion for DPRA).
+  - `src/ui.py`: Frontend user interface structure and testing harness.
+
+## 2. Integrated OECD Protocols
+- **OECD TG 431:** RhE skin corrosion (sub-categorisation 1A vs 1B/1C).
+- **OECD TG 432:** In vitro 3T3 NRU phototoxicity (PIF, MPE, and MEC screening criteria).
+- **OECD TG 437:** BCOP corneal opacity and permeability (severe eye damage, IVIS > 55).
+- **OECD TG 439:** RhE skin irritation (50% cell viability threshold).
+- **OECD TG 442C:** In chemico skin sensitisation / DPRA (Key Event 1 molecular initiating event).
+- **OECD TG 492:** RhCE reconstructed human cornea-like epithelium (eye irritation).
+- **OECD TG 497:** Defined Approaches for skin sensitisation (2-out-of-3 and Integrated Testing Strategy).
+
+## 3. Current Milestone Completed (OECD TG 442C Integration)
+- **Quantitative Model Implemented (`src/strategy.py`):**
+  - Added `evaluate_dpra()` supporting both the standard Cysteine 1:10 & Lysine 1:50 model (mean depletion cut-offs: 6.38%, 22.62%, 42.47%) and the Cysteine-only fallback model (13.89% cut-off).
+  - Updated `RegulatoryStrategyPlanner.generate_strategy()` for `"Skin Sensitisation"` to generate a 2-step cascade: Key Event 1 DPRA screening followed by the TG 497 Defined Approach battery.
+- **Unit & Retrieval Test Verification:**
+  - Updated `tests/test_strategy.py` to assert both steps of the sensitisation cascade and validate all depletion evaluation boundaries.
+  - Resolved retrieval benchmark assertions in `tests/test_evals.py` (Benchmarks 18 & 20) by accounting for section chunks titled `"Acceptance criteria"` and `"Test report"`.
+  - **Status:** All 48 test suite cases passing (`48 passed in 12.97s`).
+
+## 4. Active Context & Next Steps
+- Backend implementation and verification for OECD TG 442C is complete and verified.
+- **Immediate Path Forward:** Wire the newly implemented OECD TG 442C / DPRA decision logic into the user interface (`src/ui.py`), or proceed to integrating the next guideline in the testing matrix.

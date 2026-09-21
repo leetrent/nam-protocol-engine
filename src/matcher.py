@@ -55,14 +55,32 @@ class ProtocolMatcher:
                 matched_protocol = proto
                 break
 
-            # Match 3: Dermal Sensitisation replacement (TG 497)
+            # Match 3: In Chemico Skin Sensitisation / DPRA Key Event 1 (TG 442C)
+            # Evaluated before TG 497 so specific KE1/DPRA intent routes directly to TG 442C
+            if "442c" in proto.protocol_id and any(
+                k in query_lower for k in (
+                    "442c",
+                    "dpra",
+                    "direct peptide reactivity",
+                    "peptide reactivity",
+                    "peptide depletion",
+                    "covalent binding to proteins",
+                    "key event 1",
+                    "molecular initiating event",
+                    "in chemico",
+                )
+            ):
+                matched_protocol = proto
+                break
+
+            # Match 4: Dermal Sensitisation Defined Approaches (TG 497)
             if "sensitisation" in proto.protocol_id and any(
                 k in query_lower for k in ("sensitisation", "sensitization", "llna", "lymph node", "429")
             ):
                 matched_protocol = proto
                 break
 
-            # Match 4: Dermal Corrosion replacement (TG 431) - Evaluated before irritation
+            # Match 5: Dermal Corrosion replacement (TG 431) - Evaluated before irritation
             if "431" in proto.protocol_id and any(
                 k in query_lower for k in (
                     "skin corrosion",
@@ -77,14 +95,14 @@ class ProtocolMatcher:
                 matched_protocol = proto
                 break
 
-            # Match 5: Dermal Irritation replacement (TG 439)
+            # Match 6: Dermal Irritation replacement (TG 439)
             if "439" in proto.protocol_id and any(
                 k in query_lower for k in ("skin irritation", "dermal irritation", "rhe", "404", "rabbit skin")
             ):
                 matched_protocol = proto
                 break
 
-            # Match 6: Phototoxicity replacement (TG 432)
+            # Match 7: Phototoxicity replacement (TG 432)
             if "432" in proto.protocol_id and any(
                 k in query_lower for k in (
                     "phototoxicity",
@@ -101,7 +119,7 @@ class ProtocolMatcher:
                 matched_protocol = proto
                 break
 
-        # Derive source filter from matched guideline ID (e.g. "431", "432", "437", "439", "492", "497")
+        # Derive source filter from matched guideline ID (e.g. "431", "432", "437", "439", "442", "492", "497")
         source_filter = None
         if matched_protocol and matched_protocol.citations:
             guideline_id = matched_protocol.citations[0].guideline_id

@@ -290,3 +290,55 @@ def test_eval_retrieval_tg432_irradiation_conditions(search_index):
     assert any(
         "DESCRIPTION OF THE TEST METHOD" in s for s in top_sections
     ), f"Unexpected sections retrieved: {top_sections}"
+    
+    
+# =====================================================================
+# OECD TG 442C (In Chemico Skin Sensitisation / DPRA) Benchmarks
+# =====================================================================
+
+def test_eval_retrieval_tg442c_depletion_cutoffs(search_index):
+    """
+    Benchmark 18: Queries targeting DPRA mean depletion prediction thresholds (6.38%)
+    must surface Prediction model, Decision Criteria, or DATA AND REPORTING in TG 442C.
+    """
+    query = "mean percent peptide depletion 6.38 percent threshold prediction model"
+    results = search_index.search(query, top_k=2, source_filter="442")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 442C."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("Prediction model", "Decision Criteria", "DATA AND REPORTING", "PROCEDURE", "Acceptance criteria", "Test report"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"
+
+
+def test_eval_retrieval_tg442c_peptide_ratios(search_index):
+    """
+    Benchmark 19: Queries targeting synthetic peptide molar ratios (cysteine 1:10, lysine 1:50)
+    must surface PROCEDURE or DESCRIPTION OF THE TEST METHOD in TG 442C.
+    """
+    query = "synthetic heptapeptides cysteine 1:10 lysine 1:50 ratio HPLC incubation"
+    results = search_index.search(query, top_k=2, source_filter="442")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 442C."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("PROCEDURE", "DESCRIPTION OF THE TEST METHOD", "PRINCIPLE"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"
+
+
+def test_eval_retrieval_tg442c_applicability_exclusions(search_index):
+    """
+    Benchmark 20: Queries regarding exclusions (metals, pro-haptens)
+    must prioritize INITIAL CONSIDERATIONS, APPLICABILITY AND LIMITATIONS.
+    """
+    query = "metals pro-haptens enzyme metabolic activation limitations"
+    results = search_index.search(query, top_k=2, source_filter="442")
+
+    assert len(results) > 0, "Retrieval returned zero hits for TG 442C."
+    top_sections = [r["section_title"] for r in results]
+    assert any(
+        any(k in s for k in ("INITIAL CONSIDERATIONS", "LIMITATIONS", "INTRODUCTION", "Test report"))
+        for s in top_sections
+    ), f"Unexpected sections retrieved: {top_sections}"

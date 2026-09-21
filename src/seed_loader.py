@@ -174,6 +174,44 @@ def load_oecd_432_baseline() -> NAMProtocol:
         ],
     )    
     
+def load_oecd_442c_baseline() -> NAMProtocol:
+    """Baseline seed definition for OECD TG 442C (Direct Peptide Reactivity Assay - DPRA)."""
+    return NAMProtocol(
+        protocol_id="oecd-tg-442c-dpra",
+        protocol_name="In Chemico Skin Sensitisation: Direct Peptide Reactivity Assay (DPRA)",
+        technology_category="in_chemico",
+        endpoint=BiologicalEndpoint(
+            name="Skin Sensitisation (Molecular Initiating Event / Key Event 1)",
+            target_tissue="Dermal",
+            historical_animal_test="OECD TG 429 Murine Local Lymph Node Assay (LLNA) / OECD TG 406 Guinea Pig Maximisation Test (GPMT)",
+        ),
+        regulatory_status="Full Regulatory Acceptance",
+        context_of_use=(
+            "Quantifies synthetic heptapeptide depletion (cysteine Ac-RFAACAA-COOH at 1:10 ratio and lysine "
+            "Ac-RFAAKAA-COOH at 1:50 ratio) via HPLC-UV at 220 nm following 24h incubation. Supports "
+            "discrimination between skin sensitisers (UN GHS Category 1) and non-sensitisers within IATA or "
+            "Defined Approaches (e.g. OECD TG 497). Cysteine/lysine mean depletion > 6.38% (or cysteine-only > 13.89%) "
+            "predicts skin sensitisation. Not applicable to metals, strict pro-haptens requiring enzymatic bioactivation, "
+            "or test chemicals co-eluting with both peptides."
+        ),
+        citations=[
+            RegulatoryCitation(
+                standard_body="OECD",
+                guideline_id="OECD TG 442C",
+                document_title="Test No. 442C: In Chemico Skin Sensitisation: Assays addressing the Adverse Outcome Pathway key event on covalent binding to proteins",
+                section_reference="Appendix I: Direct Peptide Reactivity Assay (DPRA), Paragraphs 1-26 & Table 1-2",
+                official_url="https://doi.org/10.1787/9789264229709-en",
+            ),
+            RegulatoryCitation(
+                standard_body="OECD",
+                guideline_id="OECD TG 497",
+                document_title="Guideline No. 497: Defined Approaches on Skin Sensitisation",
+                section_reference="Section 2: Information Sources (Key Event 1 - DPRA)",
+                official_url="https://doi.org/10.1787/b92879a4-en",
+            ),
+        ],
+    )
+    
     
     
 if __name__ == "__main__":
@@ -187,6 +225,7 @@ if __name__ == "__main__":
         load_oecd_437_baseline(),
         load_oecd_431_baseline(),
         load_oecd_432_baseline(),
+        load_oecd_442c_baseline()
     ]
 
     for proto in protocols:
