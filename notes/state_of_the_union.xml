@@ -1,0 +1,36 @@
+<context_snapshot>
+  <project>
+    <name>NAM Protocol Engine</name>
+    <goal>Automate regulatory compliance and 3Rs justification for non-animal testing methods (OECD Test Guidelines).</goal>
+    <tech_stack>Python 3.12, uv, pytest, Pydantic v2, Gradio UI, BM25 text retrieval</tech_stack>
+  </project>
+
+  <architecture>
+    <module path="src/schemas.py">Pydantic models for structured regulatory protocols and citations.</module>
+    <module path="src/extractor.py">PDF section chunking parser (Currently brittle).</module>
+    <module path="src/search.py">BM25 guideline retrieval index.</module>
+    <module path="src/matcher.py">Rules-based protocol matcher for OECD NAM alternatives.</module>
+    <module path="src/strategy.py">Tiered strategy planner and quantitative decision models (PIF/MPE, DPRA peptide depletion).</module>
+    <module path="src/app.py">Gradio frontend UI containing Strategy, Search, and Decision Calculators.</module>
+  </architecture>
+
+  <integrated_protocols>
+    <protocol>OECD TG 431: RhE skin corrosion</protocol>
+    <protocol>OECD TG 432: In vitro 3T3 NRU phototoxicity</protocol>
+    <protocol>OECD TG 437: BCOP corneal opacity and permeability</protocol>
+    <protocol>OECD TG 439: RhE skin irritation</protocol>
+    <protocol>OECD TG 442C: In chemico skin sensitisation / DPRA</protocol>
+    <protocol>OECD TG 492: RhCE reconstructed cornea-like epithelium</protocol>
+    <protocol>OECD TG 497: Defined Approaches for skin sensitisation</protocol>
+  </integrated_protocols>
+
+  <milestone_state>
+    <status>OECD TG 442C integration complete and committed to main.</status>
+    <verification>UI manual validation passed (45/35 Standard, 10/0 Fallback). Automated suite passed (48/48 tests).</verification>
+  </milestone_state>
+
+  <active_task>
+    <branch>refactor-pdf-extractor</branch>
+    <objective>Overhaul visual heuristics and regex patterns in src/extractor.py. Prevent inconsistent formatting (e.g., generic "Acceptance criteria" or "Test report" headers) from over-segmenting guideline chunks and poisoning the BM25 search index.</objective>
+  </active_task>
+</context_snapshot>

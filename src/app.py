@@ -7,7 +7,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.matcher import ProtocolMatcher
-from src.strategy import RegulatoryStrategyPlanner, evaluate_phototoxicity
+from src.strategy import RegulatoryStrategyPlanner, evaluate_phototoxicity, evaluate_dpra
 
 matcher = ProtocolMatcher()
 planner = RegulatoryStrategyPlanner(matcher)
@@ -119,6 +119,36 @@ def run_phototoxicity_calc(pif_val: float | None, mpe_val: float | None, mec_val
 * **Requires Confirmatory Testing:** `{'Yes (e.g. 3D RhE phototoxicity model)' if eval_result['requires_confirmatory'] else 'No'}`
 """
 
+def run_dpra_calc(cys_val: float | None, lys_val: float | None):
+    cys = float(cys_val) if cys_val not in (None, "") else None
+    lys = float(lys_val) if lys_val not in (None, "") else None
+
+    if cys is None:
+        return "⚠️ Please provide at least the Cysteine depletion percentage."
+
+    try:
+        eval_result = evaluate_dpra(cysteine_depletion=cys, lysine_depletion=lys)
+    except Exception as e:
+        return f"⚠️ Evaluation error: {str(e)}"
+
+    prediction = eval_result.get("prediction", "")
+    
+    badge_color = (
+        "green"
+        if "Negative" in prediction
+        else "orange"
+        if "Low" in prediction or "Moderate" in prediction
+        else "red"
+    )
+
+    return f"""
+### Assessment: <span style='color:{badge_color};'>{eval_result.get('classification', prediction)}</span>
+* **Prediction:** **{prediction}**
+* **Quantitative Basis:** `{eval_result.get('basis', 'N/A')}`
+* **Regulatory Recommendation:** {eval_result.get('regulatory_action', 'N/A')}
+* **Requires Confirmatory Testing:** `{'Yes (e.g. TG 497 Defined Approaches)' if eval_result.get('requires_confirmatory', True) else 'No'}`
+"""
+
 
 def build_app():
     with gr.Blocks(title="NAM Protocol Engine") as demo:
@@ -126,7 +156,7 @@ def build_app():
             """
             # 🔬 NAM Protocol Engine
             ### Regulatory Decision Dashboard for Animal Testing Alternatives (3Rs)
-            Standardized non-animal replacement workflows across **OECD TG 431**, **TG 432**, **TG 437**, **TG 439**, **TG 492**, and **TG 497**.
+            Standardized non-animal replacement workflows across **OECD TG 431**, **TG 432**, **TG 437**, **TG 439**, **TG 442C**, **TG 492**, and **TG 497**.
             """
         )
 
@@ -268,6 +298,38 @@ def build_app():
                     fn=run_phototoxicity_calc,
                     inputs=[pif_in, mpe_in, mec_in],
                     outputs=[calc_out],
+                )
+                
+                gr.Markdown("---")
+                gr.Markdown(
+                    """
+                    ### OECD TG 442C / DPRA Skin Sensitisation Calculator
+                    Evaluate quantitative peptide depletion metrics (Key Event 1):
+                    * **Standard Model:** Mean of Cysteine and Lysine depletion. Thresholds: 6.38% (Negative), 22.62% (Low), 42.47% (Moderate/High).
+                    * **Cysteine-only Fallback Model:** Used when Lysine co-elution occurs. Threshold: 13.89%.
+                    """
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        cys_in = gr.Number(
+                            label="Cysteine Depletion (%)",
+                            placeholder="e.g. 5.2, 14.5, 45.0",
+                            value=None,
+                        )
+                        lys_in = gr.Number(
+                            label="Lysine Depletion (%) (Optional)",
+                            placeholder="e.g. 3.1, 10.0 (Leave blank for Cysteine-only fallback)",
+                            value=None,
+                        )
+                        dpra_calc_btn = gr.Button("Evaluate DPRA Criteria", variant="primary")
+
+                    with gr.Column(scale=2):
+                        dpra_calc_out = gr.Markdown("### Evaluation Results\n*Enter depletion metrics and click evaluate.*")
+
+                dpra_calc_btn.click(
+                    fn=run_dpra_calc,
+                    inputs=[cys_in, lys_in],
+                    outputs=[dpra_calc_out],
                 )
 
     return demo
